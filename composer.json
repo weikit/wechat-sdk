@@ -1,0 +1,29 @@
+{
+    "name": "weikit/yii2-wechat-sdk",
+    "type": "yii2-extension",
+    "description": "The wechat api SDK for the Yii framework",
+    "keywords": ["yii2", "weikit", "wechat", "weixin", "sdk"],
+    "license": "MIT",
+    "support": {
+        "issues": "https://github.com/weikit/yii2-wechat-sdk/issues",
+        "wiki": "https://github.com/weikit/yii2-wechat-sdk/wiki",
+        "source": "https://github.com/weikit/yii2-wechat-sdk"
+    },
+    "authors": [
+        {
+            "name": "CallMeZ",
+            "email": "callme-z@qq.com"
+        }
+    ],
+    "require": {
+        "ext-openssl": "*",
+        "ext-fileinfo": "*",
+        "yiisoft/yii2": "*",
+        "yiisoft/yii2-httpclient": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "weikit\\wechat\\sdk\\": ""
+        }
+    }
+}
