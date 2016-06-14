@@ -1,14 +1,17 @@
 <?php
 namespace weikit\wechat\sdk;
 
-use weikit\wechat\sdk\components\MessageCrypt;
+use DOMText;
+use DOMElement;
+use DOMDocument;
 use Yii;
 use yii\base\Event;
 use yii\base\Component;
-use yii\base\InvalidParamException;
-use yii\helpers\ArrayHelper;
 use yii\httpclient\Client;
 use yii\web\HttpException;
+use yii\helpers\ArrayHelper;
+use yii\base\InvalidParamException;
+use weikit\wechat\sdk\components\MessageCrypt;
 
 require_once 'messageCrypt/wxBizMsgCrypt.php';
 
@@ -196,10 +199,62 @@ abstract class BaseWechat extends Component
     }
 
     /**
+     * 创建微信格式的XML
+     * @param array $data
+     * @param null $charset
+     * @return string
+     */
+    public function createXml(array $data, $charset = null)
+    {
+        $dom = new DOMDocument('1.0', $charset === null ? Yii::$app->charset : $charset);
+        $root = new DOMElement('xml');
+        $dom->appendChild($root);
+        $this->buildXml($root, $data);
+        $xml = $dom->saveXML();
+        return trim(substr($xml, strpos($xml, '?>') + 2));
+    }
+
+    /**
+     * @see yii\web\XmlResponseFormatter::buildXml()
+     */
+    protected function buildXml($element, $data)
+    {
+        if (is_object($data)) {
+            $child = new DOMElement(StringHelper::basename(get_class($data)));
+            $element->appendChild($child);
+            if ($data instanceof Arrayable) {
+                $this->buildXml($child, $data->toArray());
+            } else {
+                $array = [];
+                foreach ($data as $name => $value) {
+                    $array[$name] = $value;
+                }
+                $this->buildXml($child, $array);
+            }
+        } elseif (is_array($data)) {
+            foreach ($data as $name => $value) {
+                if (is_int($name) && is_object($value)) {
+                    $this->buildXml($element, $value);
+                } elseif (is_array($value) || is_object($value)) {
+                    $child = new DOMElement(is_int($name) ? $this->itemTag : $name);
+                    $element->appendChild($child);
+                    $this->buildXml($child, $value);
+                } else {
+                    $child = new DOMElement(is_int($name) ? $this->itemTag : $name);
+                    $element->appendChild($child);
+                    $child->appendChild(new DOMText((string) $value));
+                }
+            }
+        } else {
+            $element->appendChild(new DOMText((string) $data));
+        }
+    }
+
+    /**
      * Get请求服务器
      *
      * @param $url
-     * @param null $data
+     * @param null|string|array|callable $data
      * @param array $headers
      * @param array $options
      * @return array|mixed
@@ -213,7 +268,7 @@ abstract class BaseWechat extends Component
      * Post 请求服务器
      *
      * @param $url
-     * @param null $data
+     * @param null|string|array|callable $data
      * @param array $headers
      * @param array $options
      * @return array|mixed
@@ -227,7 +282,7 @@ abstract class BaseWechat extends Component
      * Raw方式请求服务器
      *
      * @param $url
-     * @param null $data
+     * @param null|string|array|callable $data
      * @param array $headers
      * @param array $options
      * @return array|mixed
@@ -240,6 +295,21 @@ abstract class BaseWechat extends Component
         return $this->http('post', $url, $data, array_merge([
             'content-type' => 'application/json'
         ], $headers), $options);
+    }
+
+    /**
+     * Api url 组装
+     *
+     * @param $url
+     * @param array $options
+     * @return string
+     */
+    protected function httpBuildQuery($url, array $options)
+    {
+        if (!empty($options)) {
+            $url .= (stripos($url, '?') === null ? '&' : '?') . http_build_query($options);
+        }
+        return $url;
     }
 
     /**
@@ -256,7 +326,7 @@ abstract class BaseWechat extends Component
      *
      * @param string $method
      * @param string $url
-     * @param $data
+     * @param string|array|callable $data
      * @param $headers
      * @param $options
      * @param bool $force
@@ -266,7 +336,7 @@ abstract class BaseWechat extends Component
     {
         if(is_array($url)) {
             $baseUrl = ArrayHelper::remove($url, 0);
-            $url = $baseUrl . (strpos($baseUrl, '?') === false ? '?' : '&') . http_build_query($url);
+            $url = $this->httpBuildQuery($baseUrl, $url);
         }
 
         $request = $this->getClient()
@@ -277,6 +347,8 @@ abstract class BaseWechat extends Component
             ->addOptions($options);
         if (is_array($data)) {
             $request->setData($data);
+        } elseif (is_callable($data)) {
+            call_user_func($data, $request);
         } else {
             $request->setContent($data);
         }
@@ -286,7 +358,10 @@ abstract class BaseWechat extends Component
             switch ($result['errcode']) {
                 case 40001: //该错误为access_token过期失效错误, 自动强制重新获取一次access_token再重新请求
                     if ($force) {
-                        $result = $this->http($method, $url, $headers, $options, false); // 仅强制获取一次
+                        $url = preg_replace_callback("/access_token=([^&]*)/i", function(){
+                            return 'access_token=' . $this->getAccessToken(true);
+                        }, $url);
+                        $result = $this->http($method, $url, $data, $headers, $options, false); // 仅强制获取一次
                     }
                     break;
             }
@@ -307,11 +382,10 @@ abstract class BaseWechat extends Component
     /**
      * 获取错误信息
      *
-     * @param bool $force
      * @return string
      */
-    public function getErrorMessage($force = YII_DEBUG)
+    public function getErrorMessage()
     {
-        return $force && !empty($this->lastError) ? 'Error: #' . implode(': ', $this->lastError) : '';
+        return !empty($this->lastError) ? 'Error: #' . implode(': ', $this->lastError) : null;
     }
 }
