@@ -123,6 +123,7 @@ class Wechat extends BaseWechat
             }
             libxml_disable_entity_loader(true);
             $return = simplexml_load_string($data, 'SimpleXMLElement', LIBXML_NOCDATA);
+            $return = json_decode(json_encode($return, JSON_UNESCAPED_UNICODE), true);
         }
         return $return;
     }
