@@ -5,9 +5,9 @@
     "keywords": ["yii2", "laravel", "weikit", "wechat", "weixin", "sdk"],
     "license": "MIT",
     "support": {
-        "issues": "https://github.com/weikit/yii2-wechat/issues",
-        "wiki": "https://github.com/weikit/yii2-wechat/wiki",
-        "source": "https://github.com/weikit/yii2-wechat"
+        "issues": "https://github.com/weikit/wechat-sdk/issues",
+        "wiki": "https://github.com/weikit/wechat-sdk/wiki",
+        "source": "https://github.com/weikit/wechat-sdk"
     },
     "authors": [
         {
