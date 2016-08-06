@@ -16,7 +16,7 @@
     ],
     "require": {
         "ext-openssl": "*",
-        "ext-fileinfo": "*",
+        "ext-fileinfo": "*"
     },
     "autoload": {
         "psr-4": {
