@@ -1,2 +1,2 @@
-yii2-wechat-sdk
-===============
+wechat-sdk
+==========
