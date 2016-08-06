@@ -1,5 +1,5 @@
 {
-    "name": "weikit/yii2-wechat-sdk",
+    "name": "weikit/wechat-sdk",
     "type": "yii2-extension",
     "description": "The wechat api SDK for PHP",
     "keywords": ["yii2", "laravel", "weikit", "wechat", "weixin", "sdk"],
