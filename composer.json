@@ -1,26 +1,29 @@
 {
-    "name": "weikit/wechat-sdk",
-    "description": "The wechat api SDK for PHP",
-    "keywords": ["yii2", "laravel", "weikit", "wechat", "weixin", "sdk"],
-    "license": "MIT",
-    "support": {
-        "issues": "https://github.com/weikit/wechat-sdk/issues",
-        "wiki": "https://github.com/weikit/wechat-sdk/wiki",
-        "source": "https://github.com/weikit/wechat-sdk"
-    },
-    "authors": [
-        {
-            "name": "CallMeZ",
-            "email": "callme-z@qq.com"
-        }
-    ],
-    "require": {
-        "ext-openssl": "*",
-        "ext-fileinfo": "*"
-    },
-    "autoload": {
-        "psr-4": {
-            "Weikit\\Wechat\\Sdk\\": "src"
-        }
+  "name": "weikit/wechat-sdk",
+  "description": "The wechat api SDK for PHP",
+  "keywords": ["wechat", "weixin", "sdk", "weikit"],
+  "license": "MIT",
+  "support": {
+    "issues": "https://github.com/weikit/wechat-sdk/issues",
+    "wiki": "https://github.com/weikit/wechat-sdk/wiki",
+    "source": "https://github.com/weikit/wechat-sdk"
+  },
+  "authors": [
+    {
+      "name": "CallMeZ",
+      "email": "callme-z@qq.com"
     }
+  ],
+  "require": {
+    "ext-openssl": "*",
+    "ext-fileinfo": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Weikit\\Wechat\\Sdk\\": "src"
+    }
+  },
+  "suggest": {
+    "guzzlehttp/guzzle": "GuzzleRequest使用该扩展作为基础库发送请求 (~5.3|~6.0)."
+  }
 }

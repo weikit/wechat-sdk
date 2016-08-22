@@ -1,12 +1,13 @@
 <?php
-namespace weikit\wechat\sdk;
+namespace Weikit\Wechat\Sdk;
 
-use Yii;
-use yii\base\InvalidConfigException;
+use InvalidArgumentException;
+use Weikit\Wechat\Sdk\Caches\FileCache;
+use Weikit\Wechat\Sdk\Requests\CurlRequest;
 
 /**
  * Class Wechat
- * @package weikit\wechat\sdk
+ * @package Weikit\Wechat\Sdk
  */
 class Wechat extends BaseWechat
 {
@@ -19,6 +20,10 @@ class Wechat extends BaseWechat
      */
     const WECHAT_BASE_URL = 'https://api.weixin.qq.com';
     /**
+     * @var string 微信基本Url
+     */
+    public $baseUrl = self::WECHAT_BASE_URL;
+    /**
      * @var string 公众号appId
      */
     public $appId;
@@ -27,473 +32,161 @@ class Wechat extends BaseWechat
      */
     public $appSecret;
     /**
-     * @var string 公众号接口验证令牌,可自由设定. 并填写在微信公众平台->开发者中心
+     * @var string 公众号接口验证token
      */
     public $token;
-    /**
-     * @var string 消息体验证秘钥
-     */
-    public $encodingAesKey;
 
-    /**
-     * @inheritdoc
-     * @throws InvalidConfigException
-     */
+    public function __construct($config = array())
+    {
+        // merge core components with custom components
+        foreach ($this->coreComponents() as $id => $component) {
+            if (!isset($config['components'][$id])) {
+                $config['components'][$id] = $component;
+            } elseif (is_array($config['components'][$id]) && !isset($config['components'][$id]['class'])) {
+                $config['components'][$id]['class'] = $component['class'];
+            }
+        }
+        parent::__construct($config);
+    }
+
     public function init()
     {
         if ($this->appId === null) {
-            throw new InvalidConfigException('The "appId" property must be set.');
+            throw new InvalidArgumentException('The wechat property "appId" must be set.');
         } elseif ($this->appSecret === null) {
-            throw new InvalidConfigException('The "appSecret" property must be set.');
+            throw new InvalidArgumentException('The wechat property "appSecret" must be set.');
         } elseif ($this->token === null) {
-            throw new InvalidConfigException('The "token" property must be set.');
+            throw new InvalidArgumentException('The wechat property "token" must be set.');
         }
-
-        $this->clientConfig = array_merge([
-            'baseUrl' => static::WECHAT_BASE_URL
-        ], $this->clientConfig);
     }
 
     /**
-     * @inheritdoc
+     * 核心组件
+     *
+     * @return array
      */
-    public function getCacheKey($name)
+    public function coreComponents()
     {
-        return 'cache_wechat_sdk_' . $this->appId . '_' . $name;
+        return array(
+            'cache' => array('class' => 'Weikit\Wechat\Sdk\Caches\FileCache'), // 缓存组件
+            'request' => array('class' => 'Weikit\Wechat\Sdk\Requests\CurlRequest'), // 接口HTTP请求组件
+
+            'menu' => array('class' => 'Weikit\Wechat\Sdk\Components\Menu'), // 自定义菜单
+            'message' => array('class' => 'Weikit\Wechat\Sdk\Components\Message') // 消息管理
+        );
     }
-    
-    /* =================== 基本接口 =================== */
 
     /**
-     * access token获取
+     * @var BaseRequest
+     */
+    private $_request;
+
+     /**
+     * 获取Request组件
+     *
+     * @return Request|BaseRequest
+     */
+    public function getRequest()
+    {
+        if ($this->_request === null) {
+            $this->setRequest($this->get('request', false));
+        }
+        return $this->_request;
+    }
+
+    /**
+     * 设置Request组件
+     *
+     * @param BaseRequest $request
+     */
+    public function setRequest(BaseRequest $request)
+    {
+        if ($request->baseUrl === null) {
+            $request->baseUrl = $this->baseUrl;
+        }
+        $this->_request = $request;
+    }
+
+    /**
+     * @var BaseCache
+     */
+    private $_cache;
+
+    /**
+     * 获取Cache组件
+     *
+     * @return Cache|BaseCache
+     */
+    public function getCache()
+    {
+        if ($this->_cache === null) {
+            $this->setCache($this->get('cache', false));
+        }
+        return $this->_cache;
+    }
+
+    /**
+     * 设置Cache组件
+     *
+     * @param BaseCache $cache
+     */
+    public function setCache(BaseCache $cache)
+    {
+        if ($cache->keyPrefix === null) {
+            $cache->keyPrefix = 'wechat_' . $this->appId . '_'; // 设置默认缓存前缀
+        }
+        $this->_cache = $cache;
+    }
+
+    /**
+     * access_token API前缀
      */
     const WECHAT_ACCESS_TOKEN_PREFIX = 'cgi-bin/token';
+
     /**
-     * 请求微信服务器获取访问令牌
+     * 接口请求获取access_token
      *
+     * @see https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1421140183&token=&lang=zh_CN
      * @param string $grantType
      * @return array|bool
      */
     protected function requestAccessToken($grantType = 'client_credential')
     {
-        $result = $this->get(self::WECHAT_ACCESS_TOKEN_PREFIX, [
-            'appid' => $this->appId,
-            'secret' => $this->appSecret,
-            'grant_type' => $grantType
-        ]);
+        $result = $this->getRequest()
+            ->get(self::WECHAT_ACCESS_TOKEN_PREFIX, array(
+                'appid' => $this->appId,
+                'secret' => $this->appSecret,
+                'grant_type' => $grantType
+            ));
         return isset($result['access_token']) ? $result : false;
     }
 
     /**
-     * @inheritdoc
-     */
-    protected function createMessageCrypt()
-    {
-        return Yii::createObject(MessageCrypt::className(), [
-            $this->token,
-            $this->encodingAesKey,
-            $this->appId
-        ]);
-    }
-
-    /**
-     * 解析微信请求内容
-     *
-     * @param null $data
-     * @param null $messageSignature
-     * @param null $timestamp
-     * @param null $nonce
-     * @param null $encryptType
-     * @return array
-     */
-    public function parseXml($data = null, $messageSignature = null, $timestamp = null , $nonce = null, $encryptType = null)
-    {
-        $data === null && $data = Yii::$app->request->getRawBody();
-        $return = [];
-        if (!empty($data)) {
-            $messageSignature === null && isset($_GET['msg_signature']) && $messageSignature = $_GET['msg_signature'];
-            $encryptType === null && isset($_GET['encrypt_type']) && $encryptType = $_GET['encrypt_type'];
-            if ($messageSignature !== null && $encryptType == 'aes') { // 自动解密
-                $timestamp === null && isset($_GET['timestamp']) && $timestamp = $_GET['timestamp'];
-                $nonce === null && isset($_GET['nonce']) && $nonce = $_GET['nonce'];
-                $data = $this->decryptXml($data, $messageSignature, $timestamp, $nonce);
-                if ($data === false) {
-                    return $return;
-                }
-            }
-            libxml_disable_entity_loader(true);
-            $return = simplexml_load_string($data, 'SimpleXMLElement', LIBXML_NOCDATA);
-            $return = json_decode(json_encode($return, JSON_UNESCAPED_UNICODE), true);
-        }
-        return $return;
-    }
-
-    /**
-     * 微信服务器请求签名验证
-     *
-     * @param string $signature 微信加密签名，signature结合了开发者填写的token参数和请求中的timestamp参数、nonce参数。
-     * @param string $timestamp 时间戳
-     * @param string $nonce 随机数
-     * @return bool
-     */
-    public function verifySignature($signature = null, $timestamp = null, $nonce = null)
-    {
-        $signature === null && isset($_GET['signature']) && $signature = $_GET['signature'];
-        $timestamp === null && isset($_GET['timestamp']) && $timestamp = $_GET['timestamp'];
-        $nonce === null && isset($_GET['nonce']) && $nonce = $_GET['nonce'];
-        $tmpArr = [$this->token, $timestamp, $nonce];
-        sort($tmpArr, SORT_STRING);
-        $tmpStr = implode($tmpArr);
-        return sha1($tmpStr) == $signature;
-    }
-
-    /* =================== 基本操作 =================== */
-
-    /**
      * 获取微信服务器IP地址
      */
-    const WECHAT_IP_GET_PREFIX = 'cgi-bin/getcallbackip';
+    const WECHAT_IP_LIST_GET_PREFIX = 'cgi-bin/getcallbackip';
     /**
      * 获取微信服务器IP地址
      *
-     * @return bool
-     * @throws \yii\web\HttpException
+     * @return array|bool
      */
-    public function getIp()
+    public function getIpList()
     {
-        $result = $this->get([self::WECHAT_IP_GET_PREFIX, 'access_token' => $this->getAccessToken()]);
+        $result = $this->getRequest()
+            ->get(array(
+                self::WECHAT_IP_LIST_GET_PREFIX,
+                'access_token' => $this->getAccessToken()
+            ));
         return isset($result['ip_list']) ? $result['ip_list'] : false;
     }
-
-    /* =================== 自定义菜单 =================== */
-
-    /**
-     * 创建菜单
-     */
-    const WECHAT_MENU_CREATE_PREFIX = 'cgi-bin/menu/create';
-    /**
-     * 创建菜单
-     *
-     * @param array $button 菜单结构字符串
-     * ```php
-     *  $this->createMenu([
-     *      [
-     *           'type' => 'click',
-     *           'name' => '今日歌曲',
-     *           'key' => 'V1001_TODAY_MUSIC'
-     *      ],
-     *      [
-     *           'type' => 'view',
-     *           'name' => '搜索',
-     *           'url' => 'http://www.soso.com'
-     *      ]
-     *      ...
-     * ]);
-     * ```
-     * @return bool
-     */
-    public function createMenu(array $button)
-    {
-        $result = $this->raw([self::WECHAT_MENU_CREATE_PREFIX, 'access_token' => $this->getAccessToken()], [
-            'button' => $button
-        ]);
-        return isset($result['errmsg']) && $result['errmsg'] == 'ok';
-    }
-
-    /**
-     * 获取菜单列表
-     */
-    const WECHAT_MENU_GET_PREFIX = 'cgi-bin/menu/get';
-    /**
-     * 获取菜单列表
-     *
-     * @return bool
-     * @throws \yii\web\HttpException
-     */
-    public function getMenu()
-    {
-        $result = $this->raw([self::WECHAT_MENU_GET_PREFIX, 'access_token' => $this->getAccessToken()]);
-        return isset($result['menu']['button']) ? $result['menu']['button'] : false;
-    }
-
-    /**
-     * 删除菜单
-     */
-    const WECHAT_MENU_DELETE_PREFIX = 'cgi-bin/menu/delete';
-    /**
-     * 删除菜单
-     *
-     * @return bool
-     * @throws \yii\web\HttpException
-     */
-    public function deleteMenu()
-    {
-        $result = $this->get([self::WECHAT_MENU_DELETE_PREFIX, 'access_token' => $this->getAccessToken()]);
-        return isset($result['errmsg']) && $result['errmsg'] == 'ok';
-    }
-
-    /**
-     * 创建个性化菜单
-     */
-    const WECHAT_CONDITIONAL_MENU = 'cgi-bin/menu/addconditional';
-    /**
-     * 创建个性化菜单
-     *
-     * @param array $menu
-     * @return bool
-     * @throws \yii\web\HttpException
-     */
-    public function createConditionalMenu(array $menu)
-    {
-        $result = $this->raw([self::WECHAT_MENU_CREATE_PREFIX, 'access_token' => $this->getAccessToken()], $menu);
-        return isset($result['menuid']) ? $result['menuid'] : false;
-    }
-
-    /**
-     * 删除个性化菜单
-     */
-    const WECHAT_CONDITIONAL_MENU_DELETE_PREFIX = 'cgi-bin/menu/delconditional';
-    /**
-     * 删除个性化菜单
-     *
-     * @param $menuId
-     * @return bool
-     * @throws \yii\web\HttpException
-     */
-    public function deleteConditionalMenu($menuId)
-    {
-        $result = $this->raw([
-            self::WECHAT_CONDITIONAL_MENU_DELETE_PREFIX,
-            'access_token' => $this->getAccessToken()
-        ], [
-            'menuid' => $menuId
-        ]);
-        return isset($result['errmsg']) && $result['errmsg'] == 'ok';
-    }
-
-    /**
-     * 测试个性化菜单匹配结果
-     */
-    const WECHAT_CONDITIONAL_MENU_MATCH_PREFIX = 'cgi-bin/menu/trymatch';
-    /**
-     * 测试个性化菜单匹配结果
-     *
-     * @param $userId
-     * @return bool
-     * @throws \yii\web\HttpException
-     */
-    public function matchConditionalMenu($userId)
-    {
-        $result = $this->raw([
-            self::WECHAT_CONDITIONAL_MENU_MATCH_PREFIX,
-            'access_token' => $this->getAccessToken()
-        ], [
-            'user_id' => $userId
-        ]);
-        return isset($result['button']) ? $result['button'] : false;
-    }
-
-    /**
-     * 获取自定义菜单配置接口
-     */
-    const WECHAT_CURRENT_MENU_GET_PREFIX = 'cgi-bin/get_current_selfmenu_info';
-    /**
-     * 获取自定义菜单配置接口
-     *
-     * @return array|bool|mixed
-     * @throws \yii\web\HttpException
-     */
-    public function getCurrentMenu()
-    {
-        $result = $this->get([self::WECHAT_CONDITIONAL_MENU_MATCH_PREFIX, 'access_token' => $this->getAccessToken()]);
-        return isset($result['selfmenu_info']) ? $result : false;
-    }
-
     /* =================== 消息管理 =================== */
 
     /**
-     * 发送客服消息
-     */
-    const WECHAT_CUSTOM_MESSAGE_SEND_PREFIX = 'cgi-bin/message/custom/send';
-    /**
-     * 发送客服消息
-     * @param array $data
-     * @return bool
-     * @throws \yii\web\HttpException
-     */
-    public function sendMessage(array $data)
-    {
-        $result = $this->raw([
-            self::WECHAT_CUSTOM_MESSAGE_SEND_PREFIX,
-            'access_token' => $this->getAccessToken()
-        ], $data);
-        return isset($result['errmsg']) && $result['errmsg'] == 'ok';
-    }
+     * @see Weikit\Wechat\Sdk\Components\Menu
+     * /
 
-    /**
-     * 发送文本消息
-     *
-     * @param $toUser
-     * @param $content
-     * @param null $account
-     * @return bool
-     */
-    public function sendText($toUser, $content, $account = null)
-    {
-        $data = [
-            'touser' => $toUser,
-            'msgtype' => 'text',
-            'text' => [
-                'content' => $content
-            ]
-        ];
-        if ($account !== null) {
-            $data['customservice']['kf_account'] = $account;
-        }
-        return $this->sendMessage($data);
-    }
+    /* =================== 消息管理 =================== */
 
-    /**
-     * 发送图片消息
-     *
-     * @param $toUser
-     * @param $mediaId
-     * @param null $account
-     * @return bool
-     */
-    public function sendImage($toUser, $mediaId, $account = null)
-    {
-        $data = [
-            'touser' => $toUser,
-            'msgtype' => 'image',
-            'image' => [
-                'media_id' => $mediaId
-            ]
-        ];
-        if ($account !== null) {
-            $data['customservice']['kf_account'] = $account;
-        }
-        return $this->sendMessage($data);
-    }
-
-    /**
-     * 发送语音消息
-     *
-     * @param $toUser
-     * @param $mediaId
-     * @param null $account
-     * @return bool
-     */
-    public function sendVoice($toUser, $mediaId, $account = null)
-    {
-        $data = [
-            'touser' => $toUser,
-            'msgtype' => 'voice',
-            'voice' => [
-                'media_id' => $mediaId
-            ]
-        ];
-        if ($account !== null) {
-            $data['customservice']['kf_account'] = $account;
-        }
-        return $this->sendMessage($data);
-    }
-
-    /**
-     * 发送视频消息
-     *
-     * @param $toUser
-     * @param array $video
-     * @param null $account
-     * @return bool
-     */
-    public function sendVideo($toUser, array $video, $account = null)
-    {
-        $data = [
-            'touser' => $toUser,
-            'msgtype' => 'video',
-            'video' => $video
-        ];
-        if ($account !== null) {
-            $data['customservice']['kf_account'] = $account;
-        }
-        return $this->sendMessage($data);
-    }
-
-    /**
-     * 发送音乐消息
-     *
-     * @param $toUser
-     * @param array $music
-     * @param null $account
-     * @return bool
-     */
-    public function sendMusic($toUser, array $music, $account = null)
-    {
-        $data = [
-            'touser' => $toUser,
-            'msgtype' => 'music',
-            'music' => $music
-        ];
-        if ($account !== null) {
-            $data['customservice']['kf_account'] = $account;
-        }
-        return $this->sendMessage($data);
-    }
-
-    /**
-     * 发送图文消息 (限制8条)
-     *
-     * @param $toUser
-     * @param string|array $news 字符串则为微信图文消息页面,数组则为外链图文
-     * @param null $account
-     * @return bool
-     */
-    public function sendNews($toUser, $news, $account = null)
-    {
-        if (is_array($news)) {
-            $data = [
-                'touser' => $toUser,
-                'msgtype' => "news",
-                'news' => [
-                    'articles' => $news
-                ]
-            ];
-        } else {
-            $data = [
-                'touser' => $toUser,
-                'msgtype' => "mpnews",
-                'mpnews' => [
-                    'media_id' => $news
-                ]
-            ];
-        }
-        if ($account !== null) {
-            $data['customservice']['kf_account'] = $account;
-        }
-        return $this->sendMessage($data);
-    }
-
-    /**
-     * 发送卡卷消息
-     *
-     * @param $toUser
-     * @param array $card
-     * @param null $account
-     * @return bool
-     */
-    public function sendCard($toUser, array $card, $account = null)
-    {
-        $data = [
-            'touser' => $toUser,
-            'msgtype' => 'wxcard',
-            'wxcard' => $card
-        ];
-        if ($account !== null) {
-            $data['customservice']['kf_account'] = $account;
-        }
-        return $this->sendMessage($data);
-    }
 
     /**
      * 上传图文消息内的图片获取URL
@@ -504,7 +197,6 @@ class Wechat extends BaseWechat
      *
      * @param $path
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function uploadNewsImage($path)
     {
@@ -527,7 +219,6 @@ class Wechat extends BaseWechat
      *
      * @param array $articles
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function uploadNews(array $articles)
     {
@@ -546,7 +237,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return array|bool|mixed
-     * @throws \yii\web\HttpException
      */
     public function sendMassMessageByTag(array $data)
     {
@@ -565,7 +255,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return array|bool|mixed
-     * @throws \yii\web\HttpException
      */
     public function sendMassMessageByOpenId(array $data)
     {
@@ -585,7 +274,6 @@ class Wechat extends BaseWechat
      *
      * @param $messageId
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function cancelSendedMassMessage($messageId)
     {
@@ -607,7 +295,6 @@ class Wechat extends BaseWechat
      * 预览接口 (图文信息)
      * @param array $data
      * @return string|bool
-     * @throws \yii\web\HttpException
      */
     public function previewMassMessage(array $data)
     {
@@ -627,7 +314,6 @@ class Wechat extends BaseWechat
      *
      * @param $messageId
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getMassMessageStatus($messageId)
     {
@@ -649,7 +335,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function setIndustry(array $data)
     {
@@ -667,7 +352,6 @@ class Wechat extends BaseWechat
      * 获取设置的行业信息
      *
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getIndustry()
     {
@@ -684,7 +368,6 @@ class Wechat extends BaseWechat
      *
      * @param $shortTemplateId
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getTemplateId($shortTemplateId)
     {
@@ -705,7 +388,6 @@ class Wechat extends BaseWechat
      * 获取模板列表
      *
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getTemplates()
     {
@@ -722,7 +404,6 @@ class Wechat extends BaseWechat
      *
      * @param $templateId
      * @return array|mixed
-     * @throws \yii\web\HttpException
      */
     public function deleteTemplate($templateId)
     {
@@ -741,7 +422,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function sendTemplateMessage(array $data)
     {
@@ -760,7 +440,6 @@ class Wechat extends BaseWechat
      * 获取公众号的自动回复规则
      *
      * @return array|bool|mixed
-     * @throws \yii\web\HttpException
      */
     public function getAutoReplyInfo()
     {
@@ -895,7 +574,6 @@ class Wechat extends BaseWechat
      * @param $path
      * @param $type
      * @return bool|mixed
-     * @throws \yii\web\HttpException
      */
     public function uploadMedia($path, $type)
     {
@@ -916,7 +594,6 @@ class Wechat extends BaseWechat
      * 获取临时素材(下载多媒体文件)
      * @param $mediaId
      * @return bool|string
-     * @throws \yii\web\HttpException
      */
     public function getMedia($mediaId)
     {
@@ -935,7 +612,6 @@ class Wechat extends BaseWechat
      * 新增永久图文素材
      * @param array $articles
      * @return string|bool
-     * @throws \yii\web\HttpException
      */
     public function addNewsMaterial(array $articles)
     {
@@ -959,7 +635,6 @@ class Wechat extends BaseWechat
      * @param string $type
      * @param array $data 视频素材需要description
      * @return bool|mixed
-     * @throws \yii\web\HttpException
      */
     public function addMaterial($path, $type, $data = [])
     {
@@ -984,7 +659,6 @@ class Wechat extends BaseWechat
      *
      * @param $mediaId
      * @return bool|string
-     * @throws \yii\web\HttpException
      */
     public function getMaterial($mediaId)
     {
@@ -1003,7 +677,6 @@ class Wechat extends BaseWechat
      * 删除永久素材
      * @param $mediaId
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function deleteMaterial($mediaId)
     {
@@ -1025,7 +698,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function updateNewsMaterial(array $data)
     {
@@ -1043,7 +715,6 @@ class Wechat extends BaseWechat
     /**
      * 获取素材总数
      * @return bool|mixed
-     * @throws \yii\web\HttpException
      */
     public function getMaterialCount()
     {
@@ -1062,7 +733,6 @@ class Wechat extends BaseWechat
      * 获取素材列表
      * @param $data
      * @return bool|mixed
-     * @throws \yii\web\HttpException
      */
     public function getMaterials($data)
     {
@@ -1085,7 +755,6 @@ class Wechat extends BaseWechat
      *
      * @param array $tag
      * @return bool|array
-     * @throws \yii\web\HttpException
      */
     public function createTag(array $tag)
     {
@@ -1106,7 +775,6 @@ class Wechat extends BaseWechat
      * 获取公众号已创建的标签
      *
      * @return bool|array
-     * @throws \yii\web\HttpException
      */
     public function getTags()
     {
@@ -1126,7 +794,6 @@ class Wechat extends BaseWechat
      *
      * @param array $tag
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function updateTag(array $tag)
     {
@@ -1148,7 +815,6 @@ class Wechat extends BaseWechat
      *
      * @param array $tag
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function deleteTag(array $tag)
     {
@@ -1171,7 +837,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return array|bool|mixed
-     * @throws \yii\web\HttpException
      */
     public function getUsersByTag(array $data)
     {
@@ -1191,7 +856,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function setUsersTag(array $data)
     {
@@ -1211,7 +875,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function removeUsersTag(array $data)
     {
@@ -1232,7 +895,6 @@ class Wechat extends BaseWechat
      *
      * @param $openId
      * @return bool|array
-     * @throws \yii\web\HttpException
      */
     public function getUserTags($openId)
     {
@@ -1254,7 +916,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function setUserMark(array $data)
     {
@@ -1275,7 +936,6 @@ class Wechat extends BaseWechat
      * @param string $openId
      * @param string $lang
      * @return array|bool|mixed
-     * @throws \yii\web\HttpException
      */
     public function getUserInfo($openId, $lang = 'zh_CN')
     {
@@ -1297,7 +957,6 @@ class Wechat extends BaseWechat
      *
      * @param array $users
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getUsersInfo(array $users)
     {
@@ -1319,7 +978,6 @@ class Wechat extends BaseWechat
      *
      * @param $nextOpenId
      * @return array|bool|mixed
-     * @throws \yii\web\HttpException
      */
     public function getUsers($nextOpenId)
     {
@@ -1342,7 +1000,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return array|bool|mixed
-     * @throws \yii\web\HttpException
      */
     public function createQrcode(array $data)
     {
@@ -1375,7 +1032,6 @@ class Wechat extends BaseWechat
      *
      * @param $url
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getShortUrl($url)
     {
@@ -1400,7 +1056,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getUserSummary(array $data)
     {
@@ -1420,7 +1075,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getUserCumulate(array $data)
     {
@@ -1440,7 +1094,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getNewsSummary(array $data)
     {
@@ -1460,7 +1113,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getNewsTotal(array $data)
     {
@@ -1480,7 +1132,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getUserRead(array $data)
     {
@@ -1500,7 +1151,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getUserReadHour(array $data)
     {
@@ -1519,7 +1169,6 @@ class Wechat extends BaseWechat
      * 获取图文分享转发数据
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getUserShare(array $data)
     {
@@ -1539,7 +1188,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getUserShareUour(array $data)
     {
@@ -1559,7 +1207,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getUpStreamMessage(array $data)
     {
@@ -1579,7 +1226,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getUpStreamMessageHour(array $data)
     {
@@ -1598,7 +1244,6 @@ class Wechat extends BaseWechat
      * 获取消息发送周数据
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getUpStreamMessageWeek(array $data)
     {
@@ -1617,7 +1262,6 @@ class Wechat extends BaseWechat
      * 获取消息发送月数据
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getUpStreamMessageMonth(array $data)
     {
@@ -1637,7 +1281,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getUpStreamMessageDist(array $data)
     {
@@ -1657,7 +1300,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getUpStreamMessageDistWeek(array $data)
     {
@@ -1677,7 +1319,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getUpStreamMessageDistMonth(array $data)
     {
@@ -1697,7 +1338,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getInterfaceSummary(array $data)
     {
@@ -1717,7 +1357,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getInterfaceSummaryHour(array $data)
     {
@@ -1744,7 +1383,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function addCustomServiceAccount(array $data)
     {
@@ -1764,7 +1402,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function deleteCustomServiceAccount(array $data)
     {
@@ -1784,7 +1421,6 @@ class Wechat extends BaseWechat
      *
      * @param $path
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function uploadCustomServiceAvatar($path)
     {
@@ -1805,7 +1441,6 @@ class Wechat extends BaseWechat
      * 获取所有客服账号
      *
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getCustomServiceAccounts()
     {
@@ -1824,7 +1459,6 @@ class Wechat extends BaseWechat
      * 获取客服基本信息
      *
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getOnlineCustomServices()
     {
@@ -1844,7 +1478,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function inviteCustomServiceAccount(array $data)
     {
@@ -1864,7 +1497,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function updateCustomServiceAccount(array $data)
     {
@@ -1884,7 +1516,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function createCustomServiceSession(array $data)
     {
@@ -1904,7 +1535,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function closeCustomServiceSession(array $data)
     {
@@ -1924,7 +1554,6 @@ class Wechat extends BaseWechat
      *
      * @param $openId
      * @return array|bool
-     * @throws \yii\web\HttpException
      */
     public function getCustomServiceSession($openId)
     {
@@ -1944,7 +1573,6 @@ class Wechat extends BaseWechat
      * 获取未接入会话列表
      *
      * @return bool|array
-     * @throws \yii\web\HttpException
      */
     public function getWaitingCustomServices()
     {
@@ -1964,7 +1592,6 @@ class Wechat extends BaseWechat
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function getCustomServiceRecord(array $data)
     {
