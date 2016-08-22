@@ -4,7 +4,7 @@ namespace Weikit\Wechat\Sdk\Components;
 use Weikit\Wechat\Sdk\BaseComponent;
 
 /**
- * 自定菜单
+ * 自定义菜单
  * @package Weikit\Wechat\Sdk\Components
  */
 class Menu extends BaseComponent

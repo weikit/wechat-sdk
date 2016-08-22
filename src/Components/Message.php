@@ -4,7 +4,7 @@ namespace Weikit\Wechat\Sdk\Components;
 use Weikit\Wechat\Sdk\BaseComponent;
 
 /**
- * 消息发送
+ * 客服消息
  * @package Weikit\Wechat\Sdk\Components
  */
 class Message extends BaseComponent
