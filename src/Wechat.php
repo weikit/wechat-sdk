@@ -2,8 +2,6 @@
 namespace Weikit\Wechat\Sdk;
 
 use InvalidArgumentException;
-use Weikit\Wechat\Sdk\Caches\FileCache;
-use Weikit\Wechat\Sdk\Requests\CurlRequest;
 
 /**
  * @property \Weikit\Wechat\Sdk\Components\Menu $menu 自定义菜单
@@ -13,6 +11,9 @@ use Weikit\Wechat\Sdk\Requests\CurlRequest;
  * @property \Weikit\Wechat\Sdk\Components\Oauth $oauth 网页授权
  * @property \Weikit\Wechat\Sdk\Components\Material $material 素材管理
  * @property \Weikit\Wechat\Sdk\Components\User $user 用户管理
+ * @property \Weikit\Wechat\Sdk\Components\Qrcode $qrcode 二维码管理
+ * @property \Weikit\Wechat\Sdk\Components\Stats $stats 数据统计
+ * @property \Weikit\Wechat\Sdk\Components\CustomerService $customerService // 新版客服功能
  */
 class Wechat extends BaseWechat
 {
@@ -82,6 +83,10 @@ class Wechat extends BaseWechat
             'template' => array('array' => 'Weikit\Wechat\Sdk\Components\Template'), // 模板消息接口
             'oauth' => array('class' => 'Weikit\Wechat\Sdk\Components\Oauth'), // 网页授权
             'material' => array('class' => 'Weikit\Wechat\Sdk\Components\Material'), // 素材管理
+            'qrcode' => array('class' => 'Weikit\Wechat\Sdk\Components\Qrcode'), // 二维码管理
+            'stats' => array('class' => 'Weikit\Wechat\Sdk\Components\Stats'), // 数据统计
+            'customerService' => array('class' => 'Weikit\Wechat\Sdk\Components\CustomerService'), // 新版客服功能
+
         );
     }
 
@@ -239,4 +244,54 @@ class Wechat extends BaseWechat
     /**
      * @see Weikit\Wechat\Sdk\Components\User 用户管理
      */
+
+    /* =================== 账号管理 =================== */
+
+    /**
+     * @see Weikit\Wechat\Sdk\Components\Qrcode 二维码管理
+     */
+    /**
+     * 长链接转短链接接口
+     */
+    const WECHAT_SHORT_URL_GET_PREFIX = 'cgi-bin/shorturl';
+    /**
+     * 长链接转短链接接口
+     *
+     * @param $url
+     * @return bool|mixed
+     */
+    public function getShortUrl($url)
+    {
+        return $this->getRequest()
+            ->raw(array(
+                self::WECHAT_SHORT_URL_GET_PREFIX,
+                'access_token' => $this->getAccessToken()
+            ), array(
+                'action' => 'long2short',
+                'long_url' => $url
+            ));
+        return isset($result['short_url']) ? $result['short_url'] : false;
+    }
+
+    /* =================== 数据统计 =================== */
+
+    /**
+     * @see Weikit\Wechat\Sdk\Components\Stats 数据统计
+     */
+
+    /* =================== 微信卡券 =================== */
+    /* =================== 微信门店 =================== */
+    /* =================== 微信小店 =================== */
+    /* =================== 微信设备功能 =================== */
+
+    /* =================== 新版客服功能 =================== */
+
+    /**
+     * @see Weikit\Wechat\Sdk\Components\CustomerService 新版客服功能
+     */
+
+    /* =================== 微信摇一摇周边 =================== */
+    /* =================== 微信连WIFI =================== */
+    /* =================== 微信扫一扫 =================== */
+
 }
