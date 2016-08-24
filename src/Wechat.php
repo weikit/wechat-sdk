@@ -6,8 +6,13 @@ use Weikit\Wechat\Sdk\Caches\FileCache;
 use Weikit\Wechat\Sdk\Requests\CurlRequest;
 
 /**
- * Class Wechat
- * @package Weikit\Wechat\Sdk
+ * @property \Weikit\Wechat\Sdk\Components\Menu $menu 自定义菜单
+ * @property \Weikit\Wechat\Sdk\Components\Message $message 客服消息
+ * @property \Weikit\Wechat\Sdk\Components\MassMessage $massMessage 高级群发接口
+ * @property \Weikit\Wechat\Sdk\Components\Template $template 模板消息接口
+ * @property \Weikit\Wechat\Sdk\Components\Oauth $oauth 网页授权
+ * @property \Weikit\Wechat\Sdk\Components\Material $material 素材管理
+ * @property \Weikit\Wechat\Sdk\Components\User $user 用户管理
  */
 class Wechat extends BaseWechat
 {
@@ -72,7 +77,11 @@ class Wechat extends BaseWechat
             'request' => array('class' => 'Weikit\Wechat\Sdk\Requests\CurlRequest'), // 接口HTTP请求组件
 
             'menu' => array('class' => 'Weikit\Wechat\Sdk\Components\Menu'), // 自定义菜单
-            'message' => array('class' => 'Weikit\Wechat\Sdk\Components\Message') // 消息管理
+            'message' => array('class' => 'Weikit\Wechat\Sdk\Components\Message'), // 消息管理
+            'massMessage' => array('class' => 'Weikit\Wechat\Sdk\Components\MassMessage'), // 高级群发接口
+            'template' => array('array' => 'Weikit\Wechat\Sdk\Components\Template'), // 模板消息接口
+            'oauth' => array('class' => 'Weikit\Wechat\Sdk\Components\Oauth'), // 网页授权
+            'material' => array('class' => 'Weikit\Wechat\Sdk\Components\Material'), // 素材管理
         );
     }
 
@@ -84,7 +93,7 @@ class Wechat extends BaseWechat
      /**
      * 获取Request组件
      *
-     * @return Request|BaseRequest
+     * @return BaseRequest
      */
     public function getRequest()
     {
@@ -115,7 +124,7 @@ class Wechat extends BaseWechat
     /**
      * 获取Cache组件
      *
-     * @return Cache|BaseCache
+     * @return BaseCache
      */
     public function getCache()
     {
@@ -190,6 +199,44 @@ class Wechat extends BaseWechat
     /**
      * @see Weikit\Wechat\Sdk\Components\Message 客服消息
      * @see Weikit\Wechat\Sdk\Components\MassMessage 高级群发接口
+     * @see Weikit\Wechat\Sdk\Components\Template 模板消息接口
      */
 
+    /**
+     * 获取公众号的自动回复规则
+     */
+    const WECHAT_AUTO_REPLY_INFO_GET_PREFIX = 'cgi-bin/get_current_autoreply_info';
+    /**
+     * 获取公众号的自动回复规则
+     *
+     * @return array|bool|mixed
+     */
+    public function getAutoReplyInfo()
+    {
+        $result = $this
+            ->getRequest()
+            ->get(array(
+                self::WECHAT_AUTO_REPLY_INFO_GET_PREFIX,
+                'access_token' => $this->getAccessToken()
+            ));
+        return !array_key_exists('errcode', $result) ? $result : false;
+    }
+
+    /* =================== 微信网页开发 =================== */
+
+    /**
+     * @see Weikit\Wechat\Sdk\Components\Oauth 模板消息接口
+     */
+
+    /* =================== 素材管理 =================== */
+
+    /**
+     * @see Weikit\Wechat\Sdk\Components\Material 素材管理
+     */
+
+    /* =================== 用户管理 =================== */
+
+    /**
+     * @see Weikit\Wechat\Sdk\Components\User 用户管理
+     */
 }

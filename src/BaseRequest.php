@@ -77,7 +77,7 @@ abstract class BaseRequest extends BaseComponent
      * @param string|array $url
      * @return string
      */
-    protected function buildUrl($url)
+    public function buildUrl($url)
     {
         if (is_array($url)) {
             $base = '';
