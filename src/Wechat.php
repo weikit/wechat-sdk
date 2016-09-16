@@ -80,7 +80,7 @@ class Wechat extends BaseWechat
             'menu' => array('class' => 'Weikit\Wechat\Sdk\Components\Menu'), // 自定义菜单
             'message' => array('class' => 'Weikit\Wechat\Sdk\Components\Message'), // 消息管理
             'massMessage' => array('class' => 'Weikit\Wechat\Sdk\Components\MassMessage'), // 高级群发接口
-            'template' => array('array' => 'Weikit\Wechat\Sdk\Components\Template'), // 模板消息接口
+            'template' => array('class' => 'Weikit\Wechat\Sdk\Components\Template'), // 模板消息接口
             'oauth' => array('class' => 'Weikit\Wechat\Sdk\Components\Oauth'), // 网页授权
             'material' => array('class' => 'Weikit\Wechat\Sdk\Components\Material'), // 素材管理
             'qrcode' => array('class' => 'Weikit\Wechat\Sdk\Components\Qrcode'), // 二维码管理
