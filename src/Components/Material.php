@@ -11,31 +11,31 @@ class Material extends BaseComponent
     /**
      * 新增临时素材(上传临时多媒体文件)
      */
-    const WECHAT_MEDIA_UPLOAD_PREFIX = '/cgi-bin/media/upload';
+    const WECHAT_MEDIA_UPLOAD_PREFIX = 'cgi-bin/media/upload';
     /**
      * 新增临时素材(上传临时多媒体文件)
      *
-     * @param $path
-     * @param $type
+     * @param string $path
+     * @param string $type
      * @return bool|array
      */
-    public function addMedia($path, $type)
+    public function uploadMedia($path, $type = 'image')
     {
         $result = $this->getRequest()
-            ->post(array(
+            ->upload(array(
                 self::WECHAT_MEDIA_UPLOAD_PREFIX,
                 'access_token' => $this->getAccessToken(),
                 'type' => $type
-            ), function($request) use ($path) {
-                $request->addFile('media', $path);
-            });
+            ), array(
+                'media' => $path
+            ));
         return isset($result['media_id']) ? $result : false;
     }
 
     /**
      * 获取临时素材(下载多媒体文件)
      */
-    const WECHAT_MEDIA_GET_PREFIX = '/cgi-bin/media/get';
+    const WECHAT_MEDIA_GET_PREFIX = 'cgi-bin/media/get';
     /**
      * 获取临时素材(下载多媒体文件)
      *
@@ -69,16 +69,16 @@ class Material extends BaseComponent
             ->post(array(
                 self::WECHAT_NEWS_IMAGE_UPLOAD_PREFIX,
                 'access_token' => $this->getAccessToken()
-            ), function($request) use ($path) {
-                $request->addFile('media', $path);
-            });
+            ), array(
+                'media' => $path
+            ));
         return isset($result['url']) ? $result['url'] : false;
     }
 
     /**
      * 新增永久图文素材
      */
-    const WECHAT_NEWS_MATERIAL_ADD_PREFIX = '/cgi-bin/material/add_news';
+    const WECHAT_NEWS_MATERIAL_ADD_PREFIX = 'cgi-bin/material/add_news';
     /**
      * 上传图文消息素材(群发接口)
      */
@@ -106,7 +106,7 @@ class Material extends BaseComponent
     /**
      * 新增其他类型永久素材
      */
-    const WECHAT_MATERIAL_ADD_PREFIX = '/cgi-bin/material/add_material';
+    const WECHAT_MATERIAL_ADD_PREFIX = 'cgi-bin/material/add_material';
     /**
      * 新增其他类型永久素材
      *
@@ -115,26 +115,23 @@ class Material extends BaseComponent
      * @param array $data 视频素材需要description
      * @return bool|mixed
      */
-    public function add($path, $type, $data = [])
+    public function add($path, $type, $data = array())
     {
         $result = $this->getRequest()
             ->post(array(
                 self::WECHAT_MATERIAL_ADD_PREFIX,
                 'access_token' => $this->getAccessToken(),
                 'type' => $type
-            ), function($request) use ($path, $data) {
-                if ($data !== []) {
-                    $request->setData($data);
-                }
-                $request->addFile('media', $path);
-            });
+            ), array(
+                'media' => $path
+            ), $data);
         return isset($result['media_id']) ? $result : false;
     }
 
     /**
      * 获取永久素材
      */
-    const WECHAT_MATERIAL_GET_PREFIX = '/cgi-bin/material/get_material';
+    const WECHAT_MATERIAL_GET_PREFIX = 'cgi-bin/material/get_material';
     /**
      * 获取永久素材
      *
@@ -155,7 +152,7 @@ class Material extends BaseComponent
     /**
      * 删除永久素材
      */
-    const WECHAT_MATERIAL_DELETE_PREFIX = '/cgi-bin/material/del_material';
+    const WECHAT_MATERIAL_DELETE_PREFIX = 'cgi-bin/material/del_material';
     /**
      * 删除永久素材
      *
@@ -177,7 +174,7 @@ class Material extends BaseComponent
     /**
      * 修改永久图文素材
      */
-    const WECHAT_NEWS_MATERIAL_UPDATE_PREFIX = '/cgi-bin/material/update_news';
+    const WECHAT_NEWS_MATERIAL_UPDATE_PREFIX = 'cgi-bin/material/update_news';
     /**
      * 修改永久图文素材
      *
@@ -197,7 +194,7 @@ class Material extends BaseComponent
     /**
      * 获取素材总数
      */
-    const WECHAT_MATERIAL_COUNTS_GET_PREFIX = '/cgi-bin/material/get_materialcount';
+    const WECHAT_MATERIAL_COUNTS_GET_PREFIX = 'cgi-bin/material/get_materialcount';
     /**
      * 获取素材总数
      *
@@ -216,7 +213,7 @@ class Material extends BaseComponent
     /**
      * 获取素材列表
      */
-    const WECHAT_MATERIAL_LIST_GET_PREFIX = '/cgi-bin/material/batchget_material';
+    const WECHAT_MATERIAL_LIST_GET_PREFIX = 'cgi-bin/material/batchget_material';
     /**
      * 获取素材列表
      *
