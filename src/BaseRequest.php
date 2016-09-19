@@ -65,6 +65,11 @@ abstract class BaseRequest extends BaseComponent
      */
     public function upload($url, $files = array(), $data = null, $options = array())
     {
+        foreach ($files as $name => $path) {
+            if (!file_exists($path) || !is_readable($path)) {
+                throw new \InvalidArgumentException("File '{$path}' does not exist or the file is unreadable");
+            }
+        }
         return $this->http('POST', $url, $data, array_merge(array(
             'files' => $files
         ), $options));
