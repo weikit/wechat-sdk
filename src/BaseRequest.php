@@ -19,7 +19,7 @@ abstract class BaseRequest extends BaseComponent
      * @param array $options
      * @return mixed
      */
-    public function get($url, $data = null, $options = array())
+    public function get($url, $data = null, array $options = array())
     {
         return $this->http('GET', $url, $data, $options);
     }
@@ -32,7 +32,7 @@ abstract class BaseRequest extends BaseComponent
      * @param array $options
      * @return mixed
      */
-    public function post($url, $data = null, $options = array())
+    public function post($url, $data = null, array $options = array())
     {
         return $this->http('POST', $url, $data, $options);
     }
@@ -45,7 +45,7 @@ abstract class BaseRequest extends BaseComponent
      * @param array $options
      * @return mixed
      */
-    public function raw($url, $data = null, $options = array())
+    public function raw($url, $data = null, array $options = array())
     {
         return $this->http('POST', $url, $this->jsonEncode($data), array_merge(array(
             'headers' => array(
@@ -63,7 +63,7 @@ abstract class BaseRequest extends BaseComponent
      * @param array $options
      * @return mixed
      */
-    public function upload($url, $files = array(), $data = null, $options = array())
+    public function upload($url, array $files = array(), $data = null, array $options = array())
     {
         foreach ($files as $name => $path) {
             if (!file_exists($path) || !is_readable($path)) {
