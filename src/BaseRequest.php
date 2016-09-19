@@ -67,7 +67,7 @@ abstract class BaseRequest extends BaseComponent
     {
         foreach ($files as $name => $path) {
             if (!file_exists($path) || !is_readable($path)) {
-                throw new \InvalidArgumentException("File '{$path}' does not exist or the file is unreadable");
+                throw new \InvalidArgumentException("File '{$name}' path '{$path}' does not exist or the file is unreadable");
             }
         }
         return $this->http('POST', $url, $data, array_merge(array(
