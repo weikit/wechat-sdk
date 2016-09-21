@@ -54,9 +54,28 @@ class Material extends BaseComponent
     }
 
     /**
-     * 上传图文消息内的图片获取URL
+     * 上传图片
      */
-    const WECHAT_NEWS_IMAGE_UPLOAD_PREFIX = 'cgi-bin/media/uploadimg';
+    const WECHAT_MEDIA_IMAGE_UPLOAD_PREFIX = 'cgi-bin/media/uploadimg';
+    /**
+     * 上传图片 (支持图文消息, 卡券, 门店等图片上传)
+     *
+     * @param $path
+     * @param $name
+     * @return bool
+     */
+    public function uploadImage($path, $name = 'media')
+    {
+        $result = $this->getRequest()
+            ->post(array(
+                self::WECHAT_MEDIA_IMAGE_UPLOAD_PREFIX,
+                'access_token' => $this->getAccessToken()
+            ), array(
+                $name => $path
+            ));
+        return isset($result['url']) ? $result['url'] : false;
+    }
+
     /**
      * 上传图文消息内的图片获取URL
      *
@@ -65,24 +84,17 @@ class Material extends BaseComponent
      */
     public function uploadNewsImage($path)
     {
-        $result = $this->getRequest()
-            ->post(array(
-                self::WECHAT_NEWS_IMAGE_UPLOAD_PREFIX,
-                'access_token' => $this->getAccessToken()
-            ), array(
-                'media' => $path
-            ));
-        return isset($result['url']) ? $result['url'] : false;
+        return $this->uploadImage($path);
     }
 
     /**
      * 新增永久图文素材
      */
-    const WECHAT_NEWS_MATERIAL_ADD_PREFIX = 'cgi-bin/material/add_news';
+    const WECHAT_MEDIA_NEWS_MATERIAL_ADD_PREFIX = 'cgi-bin/material/add_news';
     /**
      * 上传图文消息素材(群发接口)
      */
-    const WECHAT_NEWS_ADD_PREFIX = 'cgi-bin/media/uploadnews';
+    const WECHAT_MEDIA_NEWS_ADD_PREFIX = 'cgi-bin/media/uploadnews';
     /**
      * 新增永久图文素材
      * 上传图文消息素材(群发接口)
@@ -95,7 +107,7 @@ class Material extends BaseComponent
     {
         $result = $this->getRequest()
             ->raw(array(
-                $isMass ? self::WECHAT_NEWS_ADD_PREFIX : self::WECHAT_NEWS_MATERIAL_ADD_PREFIX,
+                $isMass ? self::WECHAT_MEDIA_NEWS_ADD_PREFIX : self::WECHAT_MEDIA_NEWS_MATERIAL_ADD_PREFIX,
                 'access_token' => $this->getAccessToken()
             ), array(
                 'articles' => $articles
@@ -174,7 +186,7 @@ class Material extends BaseComponent
     /**
      * 修改永久图文素材
      */
-    const WECHAT_NEWS_MATERIAL_UPDATE_PREFIX = 'cgi-bin/material/update_news';
+    const WECHAT_MATERIAL_NEWS_UPDATE_PREFIX = 'cgi-bin/material/update_news';
     /**
      * 修改永久图文素材
      *
@@ -185,7 +197,7 @@ class Material extends BaseComponent
     {
         $result = $this->getRequest()
             ->raw(array(
-                self::WECHAT_NEWS_MATERIAL_UPDATE_PREFIX,
+                self::WECHAT_MATERIAL_NEWS_UPDATE_PREFIX,
                 'access_token' => $this->getAccessToken()
             ), $data);
         return isset($result['errcode']) && !$result['errcode'];
@@ -220,7 +232,7 @@ class Material extends BaseComponent
      * @param $data
      * @return bool|array
      */
-    public function getList($data)
+    public function lists($data)
     {
         $result = $this->getRequest()
             ->raw(array(

@@ -62,12 +62,12 @@ class CustomerService extends BaseComponent
     public function setAvatar($path)
     {
         $result = $this->getRequest()
-            ->post(array(
+            ->upload(array(
                 self::WECHAT_CUSTOM_SERVICE_ACCOUNT_AVATAR_UPLOAD_PREFIX,
                 'access_token' => $this->getAccessToken()
-            ), function($request) use ($path) {
-                $request->addFile('media', $path);
-            });
+            ), array(
+                'media' => $path
+            ));
         return isset($result['errmsg']) && $result['errmsg'] == 'ok';
     }
 
@@ -80,7 +80,7 @@ class CustomerService extends BaseComponent
      *
      * @return bool|array
      */
-    public function getAll()
+    public function lists()
     {
         $result = $this->getRequest()
             ->get(array(
@@ -93,7 +93,7 @@ class CustomerService extends BaseComponent
     /**
      * 获取客服基本信息
      */
-    const WECHAT_ONLINE_CUSTOM_SERVICES_PREFIX = 'cgi-bin/customservice/getonlinekflist';
+    const WECHAT_CUSTOM_SERVICE_ONLINE_GET_PREFIX = 'cgi-bin/customservice/getonlinekflist';
     /**
      * 获取客服基本信息
      *
@@ -103,7 +103,7 @@ class CustomerService extends BaseComponent
     {
         $result = $this->getRequest()
             ->get(array(
-                self::WECHAT_ONLINE_CUSTOM_SERVICES_PREFIX,
+                self::WECHAT_CUSTOM_SERVICE_ONLINE_GET_PREFIX,
                 'access_token' => $this->getAccessToken()
             ));
         return isset($result['kf_online_list']) ? $result['kf_online_list'] : false;
@@ -152,7 +152,7 @@ class CustomerService extends BaseComponent
     /**
      * 创建会话
      */
-    const WECHAT_CUSOM_SERVICE_SESSION_CREATE_PREFIX = 'customservice/kfsession/create';
+    const WECHAT_CUSTOM_SERVICE_SESSION_CREATE_PREFIX = 'customservice/kfsession/create';
     /**
      * 创建会话
      *
@@ -163,7 +163,7 @@ class CustomerService extends BaseComponent
     {
         $result = $this->getRequest()
             ->raw(array(
-                self::WECHAT_CUSTOM_SERVICE_ACCOUNT_UPDATE_PREFIX,
+                self::WECHAT_CUSTOM_SERVICE_SESSION_CREATE_PREFIX,
                 'access_token' => $this->getAccessToken()
             ), $data);
         return isset($result['errmsg']) && $result['errmsg'] == 'ok';
@@ -172,7 +172,7 @@ class CustomerService extends BaseComponent
     /**
      * 关闭会话
      */
-    const WECHAT_CUSOM_SERVICE_SESSION_CLOSE_PREFIX = 'customservice/kfsession/close';
+    const WECHAT_CUSTOM_SERVICE_SESSION_CLOSE_PREFIX = 'customservice/kfsession/close';
     /**
      * 关闭会话
      *
@@ -183,7 +183,7 @@ class CustomerService extends BaseComponent
     {
         $result = $this->getRequest()
             ->raw(array(
-                self::WECHAT_CUSOM_SERVICE_SESSION_CLOSE_PREFIX,
+                self::WECHAT_CUSTOM_SERVICE_SESSION_CLOSE_PREFIX,
                 'access_token' => $this->getAccessToken()
             ), $data);
         return isset($result['errmsg']) && $result['errmsg'] == 'ok';

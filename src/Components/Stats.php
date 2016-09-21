@@ -257,7 +257,7 @@ class Stats extends BaseComponent
      * 获取消息发送分布数据
      *
      * @param array $data
-     * @return booldion
+     * @return bool|array
      */
     public function getUpstreamMessageDistSummary(array $data)
     {

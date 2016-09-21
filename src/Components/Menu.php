@@ -151,7 +151,7 @@ class Menu extends BaseComponent
     /**
      * 获取自定义菜单配置接口
      */
-    const WECHAT_CURRENT_MENU_GET_PREFIX = 'cgi-bin/get_current_selfmenu_info';
+    const WECHAT_MENU_CURRENT_GET_PREFIX = 'cgi-bin/get_current_selfmenu_info';
     /**
      * 获取自定义菜单配置接口
      *
@@ -161,7 +161,7 @@ class Menu extends BaseComponent
     {
         $result = $this->getRequest()
             ->get(array(
-                self::WECHAT_CURRENT_MENU_GET_PREFIX,
+                self::WECHAT_MENU_CURRENT_GET_PREFIX,
                 'access_token' => $this->getAccessToken()
             ));
         return isset($result['selfmenu_info']) ? $result : false;

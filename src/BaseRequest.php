@@ -15,13 +15,12 @@ abstract class BaseRequest extends BaseComponent
      * GET方式发送请求
      *
      * @param string|array $url
-     * @param mixed $data
      * @param array $options
      * @return mixed
      */
-    public function get($url, $data = null, array $options = array())
+    public function get($url, array $options = array())
     {
-        return $this->http('GET', $url, $data, $options);
+        return $this->http('GET', $url, null, $options);
     }
 
     /**

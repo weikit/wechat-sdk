@@ -14,11 +14,11 @@ class Template extends BaseComponent
      * 获取设置的行业信息
      */
     const WECHAT_TEMPLATE_INDUSTRY_GET_PREFIX = 'cgi-bin/template/get_industry';
+
     /**
      * 获取设置的行业信息
      *
-     * @return bool
-     * @throws \yii\web\HttpException
+     * @return bool|array
      */
     public function getIndustry()
     {
@@ -81,7 +81,7 @@ class Template extends BaseComponent
      *
      * @return bool|array
      */
-    public function getAll()
+    public function lists()
     {
         $result = $this->getRequest()
             ->get(array(

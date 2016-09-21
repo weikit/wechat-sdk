@@ -145,7 +145,6 @@ class User extends BaseComponent
      *
      * @param array $data
      * @return bool
-     * @throws \yii\web\HttpException
      */
     public function removeUsersTag(array $data)
     {
@@ -254,7 +253,7 @@ class User extends BaseComponent
      * @param $nextOpenId
      * @return array|bool|mixed
      */
-    public function getUsers($nextOpenId)
+    public function lists($nextOpenId)
     {
         $result = $this->getRequest()
             ->get(array(

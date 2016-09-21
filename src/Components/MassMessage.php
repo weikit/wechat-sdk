@@ -42,7 +42,7 @@ class MassMessage extends BaseComponent
     /**
      * 删除群发
      */
-    const WECHAT_SENDED_MASS_MESSAGE_CANCEL_PREFIX = 'cgi-bin/message/mass/delete';
+    const WECHAT_MASS_MESSAGE_SENDED_CANCEL_PREFIX = 'cgi-bin/message/mass/delete';
     /**
      * 删除群发
      *
@@ -53,7 +53,7 @@ class MassMessage extends BaseComponent
     {
         $result = $this->getRequest()
             ->raw(array(
-                self::WECHAT_SENDED_MASS_MESSAGE_CANCEL_PREFIX,
+                self::WECHAT_MASS_MESSAGE_SENDED_CANCEL_PREFIX,
                 'access_token' => $this->getAccessToken()
             ), array(
                 'msg_id' => $messageId

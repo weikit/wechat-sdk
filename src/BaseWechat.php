@@ -74,6 +74,73 @@ abstract class BaseWechat extends ServiceLocator
     abstract protected function requestAccessToken();
 
     /**
+     * @var array
+     */
+    private $_apiTicket;
+
+    /**
+     * 获取API ticket(默认获取jsapi)
+     *
+     * @param bool $force
+     * @param string $type
+     * @return mixed
+     */
+    public function getApiTicket($force = true, $type = 'jsapi')
+    {
+        $time = time(); // 为了更精确控制.取当前时间计算
+
+        $keyExists = array_key_exists($type, $this->_apiTicket);
+        if (
+            !$keyExists || $this->_apiTicket[$type] === null || $this->_apiTicket[$type]['expire'] < $time || $force
+        ) {
+            $cacheKey = 'api_ticket_' . $type;
+            $result = (!$keyExists || $this->_apiTicket[$type] === null) && !$force ? $this->getCache()->get($cacheKey) : false;
+            if ($result === false) {
+                $result = $this->requestApiTicket($type);
+                if (!isset($result['ticket']) && !isset($result['expires_in'])) {
+                    throw new \UnexpectedValueException("Fail to get '{$type}' ticket from wechat server.");
+                }
+                $result['expires_in'] -= 15; // 15秒误差
+                $result['expire'] = $time + $result['expires_in'];
+                $this->getCache()->set($cacheKey, $result, $result['expires_in']);
+            }
+            $this->setApiTicket($result, $type);
+        }
+        return $this->_apiTicket[$type]['ticket'];
+    }
+
+    /**
+     * 设置API ticket
+     *
+     * @param array $ticket
+     * @param $type
+     */
+    public function setApiTicket(array $ticket, $type)
+    {
+        if (!isset($ticket['ticket'])) {
+            throw new \InvalidArgumentException('The api ticket must be set.');
+        } elseif(!isset($ticket['expire'])) {
+            throw new \InvalidArgumentException('Wechat api ticket expire time must be set.');
+        }
+        $this->_apiTicket[$type] = $ticket;
+    }
+
+    /**
+     * 请求微信服务器获取api ticket
+     * 必须返回以下格式内容失败则返回false
+     * ```php
+     * array(
+     *     'ticket => 'xxx',
+     *     'expirs_in' => 7200
+     * )
+     * ```
+     *
+     * @param string $type api类型, 订阅号(jsapi, wx_card), 企业号(jsapi)
+     * @return array|bool
+     */
+    abstract protected function requestApiTicket($type);
+
+    /**
      * 获取Request组件
      *
      * @return BaseRequest

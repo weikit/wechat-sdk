@@ -17,7 +17,7 @@ class Oauth extends BaseComponent
      * 用户同意授权，获取code:第一步
      * 通过此函数生成授权url
      *
-     * @param $redirectUrl 授权后重定向的回调链接地址，请使用urlencode对链接进行处理
+     * @param string $redirectUrl 授权后重定向的回调链接地址，请使用urlencode对链接进行处理
      * @param string $state 重定向后会带上state参数，开发者可以填写a-zA-Z0-9的参数值
      * @param string $scope 应用授权作用域，snsapi_base （不弹出授权页面，直接跳转，只能获取用户openid），
      * snsapi_userinfo （弹出授权页面，可通过openid拿到昵称、性别、所在地。并且，即使在未关注的情况下，只要用户授权，也能获取其信息）
@@ -52,8 +52,8 @@ class Oauth extends BaseComponent
         $result = $this->getRequest()
             ->get(array(
                 self::WECHAT_OAUTH2_ACCESS_TOKEN_PREFIX,
-                'appid' => $this->appId,
-                'secret' => $this->appSecret,
+                'appid' => $this->wechat->appId,
+                'secret' => $this->wechat->appSecret,
                 'code' => $code,
                 'grant_type' => $grantType
             ));
@@ -78,7 +78,7 @@ class Oauth extends BaseComponent
         $result = $this->getRequest()
             ->get(array(
                 self::WECHAT_OAUTH2_ACCESS_TOKEN_REFRESH_PREFIX,
-                'appid' => $this->appId,
+                'appid' => $this->wechat->appId,
                 'grant_type' => $grantType,
                 'refresh_token' => $refreshToken
             ));

@@ -10,7 +10,7 @@ use Weikit\Wechat\Sdk\Base\Object;
 abstract class BaseComponent extends Object
 {
     /**
-     * @var BaseWechat $wechat
+     * @var BaseWechat|Wechat $wechat
      */
     protected $wechat;
 
