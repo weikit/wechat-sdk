@@ -16,6 +16,8 @@ use InvalidArgumentException;
  * @property \Weikit\Wechat\Sdk\Components\CustomerService $customerService 新版客服功能
  * @property \Weikit\Wechat\Sdk\Components\Card $card 微信卡券
  * @property \Weikit\Wechat\Sdk\Components\Poi $poi 门店
+ *
+ * @property \Weikit\Wechat\Sdk\Components\Authorization $authorization  第三方平台授权
  */
 class Wechat extends BaseWechat
 {
@@ -90,6 +92,8 @@ class Wechat extends BaseWechat
             'customerService' => array('class' => 'Weikit\Wechat\Sdk\Components\CustomerService'), // 新版客服功能
             'card' => array('class' => 'Weikit\Wechat\Sdk\Components\Card'), // 微信卡券
             'poi' => array('class' => 'Weikit\Wechat\Sdk\Components\Poi'), // 门店
+
+            'authorization' => array('class' => 'Weikit\Wechat\Sdk\Component\Authorization'), // 第三方平台授权
         );
     }
 
@@ -177,7 +181,7 @@ class Wechat extends BaseWechat
             ));
         return isset($result['access_token']) ? $result : false;
     }
-    /* =========== 第三方强授权相关接口 =========== */
+
     /**
      * 请求获取api ticket
      */
@@ -199,65 +203,6 @@ class Wechat extends BaseWechat
         return isset($result['errmsg']) && $result['errmsg'] === 'ok' ? $result : false;
     }
 
-    /**
-     * 使用授权码换取公众号的授权信息
-     */
-    const WECHAT_AUTHORIZATION_INFO_TOKEN_GET_PREFIX = 'cgi-bin/component/api_query_auth';
-    /**
-     * 使用授权码换取公众号的授权信息
-     *
-     * @param array $data
-     * @return bool|array
-     */
-    public function getAuthorizationByToken(array $data)
-    {
-        $result = $this->getRequest()
-            ->raw(array(
-                self::WECHAT_AUTHORIZATION_INFO_TOKEN_GET_PREFIX,
-                'access_token' => $this->getAccessToken(),
-            ), $data);
-        return isset($result['authorization_info']) ? $result['authorization_info'] : false;
-    }
-
-    /**
-     * 获取授权方的账户信息
-     */
-    const WECHAT_AUTHORIZER_INFO_TOKEN_GET_PREFIX = 'cgi-bin/component/api_get_authorizer_info';
-    /**
-     * 获取授权方的账户信息
-     *
-     * @param array $data
-     * @return bool|array
-     */
-    public function getAuthorizer(array $data)
-    {
-        $result = $this->getRequest()
-            ->raw(array(
-                self::WECHAT_AUTHORIZER_INFO_TOKEN_GET_PREFIX,
-                'access_token' => $this->getAccessToken(),
-            ), $data);
-        return isset($result['authorizer_info']) ? $result : false;
-    }
-
-    /**
-     * 确认授权
-     */
-    const WECHAT_AUTHORIZATION_CONFIRM_PREFIX = 'cgi-bin/component/api_confirm_authorization';
-    /**
-     * 确认授权
-     *
-     * @param array $data
-     * @return bool
-     */
-    public function confirmAuthorization(array $data)
-    {
-        $result = $this->getRequest()
-            ->raw(array(
-                self::WECHAT_AUTHORIZATION_INFO_GET_PREFIX,
-                'access_token' => $this->getAccessToken(),
-            ), $data);
-        return isset($result['errcode']) && !$result['code'];
-    }
     /**
      * 获取微信服务器IP地址
      */
@@ -387,4 +332,9 @@ class Wechat extends BaseWechat
     /* =================== 微信连WIFI =================== */
     /* =================== 微信扫一扫 =================== */
 
+    /* =================== 开放平台 =================== */
+
+    /**
+     * @see Weikit\Wechat\Sdk\Components\Authorization 第三方平台授权
+     */
 }
