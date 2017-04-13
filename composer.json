@@ -16,7 +16,8 @@
   ],
   "require": {
     "ext-openssl": "*",
-    "ext-fileinfo": "*"
+    "ext-fileinfo": "*",
+    "weikit/base": "dev-master"
   },
   "autoload": {
     "psr-4": {

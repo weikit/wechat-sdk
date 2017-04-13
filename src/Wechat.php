@@ -45,6 +45,10 @@ class Wechat extends BaseWechat
      * @var string 公众号接口验证token
      */
     public $token;
+    /**
+     * @var 加密AES Key
+     */
+    public $encodingAESKey;
 
     public function __construct($config = array())
     {
@@ -160,6 +164,84 @@ class Wechat extends BaseWechat
     }
 
     /**
+     * 微信服务器请求签名验证
+     *
+     * @param string $signature 微信加密签名，signature结合了开发者填写的token参数和请求中的timestamp参数、nonce参数。
+     * @param string $timestamp 时间戳
+     * @param string $nonce 随机数
+     * @return bool
+     */
+    public function verifySignature($signature = null, $timestamp = null, $nonce = null)
+    {
+        $signature === null && isset($_GET['signature']) && $signature = $_GET['signature'];
+        $timestamp === null && isset($_GET['timestamp']) && $timestamp = $_GET['timestamp'];
+        $nonce === null && isset($_GET['nonce']) && $nonce = $_GET['nonce'];
+        $tmpArr = [$this->token, $timestamp, $nonce];
+        sort($tmpArr, SORT_STRING);
+        $tmpStr = implode($tmpArr);
+        return sha1($tmpStr) == $signature;
+    }
+
+    /**
+     * 解析微信请求消息
+     *
+     * @param null $message
+     * @param null $encryptType
+     * @return array|mixed
+     */
+    public function parseMessage($message = null, $encryptType = null)
+    {
+        $message === null && $message = file_get_contents('php://input');
+        $encryptType === null && isset($_GET['encrypt_type']) && $encryptType = $_GET['encrypt_type'];
+        $return = [];
+        if (!empty($message)) {
+            if ($encryptType === 'aes') {
+                $messageSignature = isset($_GET['msg_signature']) ? $_GET['msg_signature'] : null;
+                $nonce = isset($_GET['nonce']) ? $_GET['nonce'] : null;
+                $timestamp = isset($_GET['timestamp']) ? $_GET['timestamp'] : null;
+                $message = $this->decryptMessage($message, $timestamp, $nonce, $messageSignature);
+            }
+            if (!empty($message)) {
+                $return = $this->parseXml($message);
+            }
+        }
+        return $return;
+    }
+
+    /**
+     * 解密微信请求的XML消息
+     *
+     * @param string $message xml消息
+     * @param $timestamp
+     * @param $nonce
+     * @param $messageSignature
+     * @return false|string
+     */
+    public function decryptMessage($message, $timestamp, $nonce, $messageSignature)
+    {
+        if ($this->getMessageCrypter()->decryptMsg($messageSignature, $timestamp, $nonce, $message, $return) != 0) {
+            return false;
+        }
+        return $return;
+    }
+
+    /**
+     * 加密微信请求的XML消息
+     *
+     * @param string $message xml消息
+     * @param $timeStamp
+     * @param $nonce
+     * @return false|string
+     */
+    public function encryptMessage($message, $timeStamp, $nonce)
+    {
+        if ($this->getMessageCrypter()->encryptMsg($message, $timeStamp, $nonce, $return) != 0) {
+            return false;
+        }
+        return $return;
+    }
+
+    /**
      * access_token API前缀
      */
     const WECHAT_ACCESS_TOKEN_PREFIX = 'cgi-bin/token';
@@ -224,15 +306,15 @@ class Wechat extends BaseWechat
     /* =================== 消息管理 =================== */
 
     /**
-     * @see Weikit\Wechat\Sdk\Components\Menu 自定义菜单
+     * @see \Weikit\Wechat\Sdk\Components\Menu 自定义菜单
      */
 
     /* =================== 消息管理 =================== */
 
     /**
-     * @see Weikit\Wechat\Sdk\Components\Message 客服消息
-     * @see Weikit\Wechat\Sdk\Components\MassMessage 高级群发接口
-     * @see Weikit\Wechat\Sdk\Components\Template 模板消息接口
+     * @see \Weikit\Wechat\Sdk\Components\Message 客服消息
+     * @see \Weikit\Wechat\Sdk\Components\MassMessage 高级群发接口
+     * @see \Weikit\Wechat\Sdk\Components\Template 模板消息接口
      */
 
     /**
@@ -258,25 +340,25 @@ class Wechat extends BaseWechat
     /* =================== 微信网页开发 =================== */
 
     /**
-     * @see Weikit\Wechat\Sdk\Components\Oauth 模板消息接口
+     * @see \Weikit\Wechat\Sdk\Components\Oauth 模板消息接口
      */
 
     /* =================== 素材管理 =================== */
 
     /**
-     * @see Weikit\Wechat\Sdk\Components\Material 素材管理
+     * @see \Weikit\Wechat\Sdk\Components\Material 素材管理
      */
 
     /* =================== 用户管理 =================== */
 
     /**
-     * @see Weikit\Wechat\Sdk\Components\User 用户管理
+     * @see \Weikit\Wechat\Sdk\Components\User 用户管理
      */
 
     /* =================== 账号管理 =================== */
 
     /**
-     * @see Weikit\Wechat\Sdk\Components\Qrcode 二维码管理
+     * @see \Weikit\Wechat\Sdk\Components\Qrcode 二维码管理
      */
     /**
      * 长链接转短链接接口
@@ -304,19 +386,19 @@ class Wechat extends BaseWechat
     /* =================== 数据统计 =================== */
 
     /**
-     * @see Weikit\Wechat\Sdk\Components\Stats 数据统计
+     * @see \Weikit\Wechat\Sdk\Components\Stats 数据统计
      */
 
     /* =================== 微信卡券 =================== */
 
     /**
-     * @see Weikit\Wechat\Sdk\Components\Card 微信卡券
+     * @see \Weikit\Wechat\Sdk\Components\Card 微信卡券
      */
 
     /* =================== 微信门店 =================== */
 
     /**
-     * @see Weikit\Wechat\Sdk\Components\Poi 门店
+     * @see \Weikit\Wechat\Sdk\Components\Poi 门店
      */
 
     /* =================== 微信小店 =================== */
@@ -325,7 +407,7 @@ class Wechat extends BaseWechat
     /* =================== 新版客服功能 =================== */
 
     /**
-     * @see Weikit\Wechat\Sdk\Components\CustomerService 新版客服功能
+     * @see \Weikit\Wechat\Sdk\Components\CustomerService 新版客服功能
      */
 
     /* =================== 微信摇一摇周边 =================== */
@@ -335,6 +417,6 @@ class Wechat extends BaseWechat
     /* =================== 开放平台 =================== */
 
     /**
-     * @see Weikit\Wechat\Sdk\Components\Authorization 第三方平台授权
+     * @see \Weikit\Wechat\Sdk\Components\Authorization 第三方平台授权
      */
 }

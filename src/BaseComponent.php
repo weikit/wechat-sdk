@@ -1,7 +1,7 @@
 <?php
 namespace Weikit\Wechat\Sdk;
 
-use Weikit\Wechat\Sdk\Base\Object;
+use Weikit\Base\Object;
 
 /**
  * Class BaseComponent

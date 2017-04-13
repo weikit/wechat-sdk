@@ -126,6 +126,29 @@ abstract class BaseWechat extends ServiceLocator
     }
 
     /**
+     * 获取消息加密类
+     *
+     * @return MessageCrypter
+     */
+    public function getMessageCrypter()
+    {
+        return new MessageCrypter($this->token, $this->encodingAESKey, $this->appId);
+    }
+
+    /**
+     * 解析Xml数据
+     *
+     * @param $xml
+     * @return mixed
+     */
+    public function parseXml($xml)
+    {
+        libxml_disable_entity_loader(true);
+        $return = simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NOCDATA);
+        return json_decode(json_encode($return, JSON_UNESCAPED_UNICODE), true);
+    }
+
+    /**
      * 请求微信服务器获取api ticket
      * 必须返回以下格式内容失败则返回false
      * ```php
