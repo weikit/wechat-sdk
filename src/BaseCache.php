@@ -1,4 +1,5 @@
 <?php
+
 namespace Weikit\Wechat\Sdk;
 
 /**
@@ -18,6 +19,7 @@ abstract class BaseCache extends BaseComponent
      * @param $key
      * @param $value
      * @param int $duration
+     *
      * @return bool
      */
     abstract public function set($key, $value, $duration = 7200);
@@ -26,6 +28,7 @@ abstract class BaseCache extends BaseComponent
      * 获取缓存数据
      *
      * @param $key
+     *
      * @return mixed|bool
      */
     abstract public function get($key);
@@ -34,11 +37,12 @@ abstract class BaseCache extends BaseComponent
      * 创建带key前缀的缓存键
      *
      * @param mixed $key
+     *
      * @return string
      */
     public function buildKey($key)
     {
-        if (!is_string($key)) {
+        if ( ! is_string($key)) {
             throw new \InvalidArgumentException('The cache key must be an string.');
         }
         $key = ctype_alnum($key) && mb_strlen($key, '8bit') <= 32 ? $key : md5($key);

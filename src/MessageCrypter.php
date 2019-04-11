@@ -1,4 +1,5 @@
 <?php
+
 namespace Weikit\Wechat\Sdk;
 
 require_once 'messageCrypt/wxBizMsgCrypt.php';

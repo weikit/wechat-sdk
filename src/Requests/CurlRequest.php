@@ -1,4 +1,5 @@
 <?php
+
 namespace Weikit\Wechat\Sdk\Requests;
 
 use Weikit\Wechat\Sdk\BaseRequest;
@@ -12,7 +13,7 @@ class CurlRequest extends BaseRequest
     /**
      * @inheritdoc
      */
-    public function request($method, $url, $data, array $options = array(), $force = true)
+    public function request($method, $url, $data, array $options = [], $force = true)
     {
         $curl = curl_init();
         switch (strtoupper($method)) {
@@ -20,14 +21,14 @@ class CurlRequest extends BaseRequest
                 if (is_array($data)) {
                     $data = http_build_query($data);
                 }
-                if (!empty($data)) {
+                if ( ! empty($data)) {
                     $url .= (strpos($url, '?') === false ? '?' : '&') . $data;
                 }
                 break;
             case 'POST':
                 // 上传图片
                 if (isset($options['files']) && is_array($options['files'])) {
-                    $data = (array) $data;
+                    $data = (array)$data;
                     foreach ($options['files'] as $name => $path) {
                         // php 5.5将抛弃@写法,引用CURLFile类来实现 @see http://segmentfault.com/a/1190000000725185
                         $data[$name] = class_exists('\CURLFile') ? new \CURLFile($path) : '@' . $path;
@@ -65,6 +66,7 @@ class CurlRequest extends BaseRequest
         if (isset($responseInfo['http_code']) && intval($responseInfo['http_code']) == 200) {
             return $response;
         }
+
         return false;
     }
 }

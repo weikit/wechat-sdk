@@ -1,4 +1,5 @@
 <?php
+
 namespace Weikit\Wechat\Sdk\Components;
 
 use Weikit\Wechat\Sdk\BaseComponent;
@@ -13,6 +14,7 @@ class Menu extends BaseComponent
      * 创建菜单
      */
     const WECHAT_MENU_CREATE_PREFIX = 'cgi-bin/menu/create';
+
     /**
      * 创建菜单
      *
@@ -31,18 +33,21 @@ class Menu extends BaseComponent
      *      ...
      * ]);
      * ```
+     *
      * @param array $button 菜单结构字符串
+     *
      * @return bool
      */
     public function create(array $button)
     {
         $result = $this->getRequest()
-            ->raw(array(
-                self::WECHAT_MENU_CREATE_PREFIX,
-                'access_token' => $this->getAccessToken()
-            ), array(
-                'button' => $button
-            ));
+                       ->raw([
+                           self::WECHAT_MENU_CREATE_PREFIX,
+                           'access_token' => $this->getAccessToken(),
+                       ], [
+                           'button' => $button,
+                       ]);
+
         return isset($result['errmsg']) && $result['errmsg'] == 'ok';
     }
 
@@ -50,6 +55,7 @@ class Menu extends BaseComponent
      * 获取菜单列表
      */
     const WECHAT_MENU_GET_PREFIX = 'cgi-bin/menu/get';
+
     /**
      * 获取菜单列表
      *
@@ -58,10 +64,11 @@ class Menu extends BaseComponent
     public function get()
     {
         $result = $this->getRequest()
-            ->raw(array(
-                self::WECHAT_MENU_GET_PREFIX,
-                'access_token' => $this->getAccessToken()
-            ));
+                       ->raw([
+                           self::WECHAT_MENU_GET_PREFIX,
+                           'access_token' => $this->getAccessToken(),
+                       ]);
+
         return isset($result['menu']['button']) ? $result['menu']['button'] : false;
     }
 
@@ -69,6 +76,7 @@ class Menu extends BaseComponent
      * 删除菜单
      */
     const WECHAT_MENU_DELETE_PREFIX = 'cgi-bin/menu/delete';
+
     /**
      * 删除菜单
      *
@@ -77,10 +85,11 @@ class Menu extends BaseComponent
     public function delete()
     {
         $result = $this->getRequest()
-            ->get(array(
-                self::WECHAT_MENU_DELETE_PREFIX,
-                'access_token' => $this->getAccessToken()
-            ));
+                       ->get([
+                           self::WECHAT_MENU_DELETE_PREFIX,
+                           'access_token' => $this->getAccessToken(),
+                       ]);
+
         return isset($result['errmsg']) && $result['errmsg'] == 'ok';
     }
 
@@ -88,19 +97,22 @@ class Menu extends BaseComponent
      * 创建个性化菜单
      */
     const WECHAT_CONDITIONAL_MENU_ADD_PREFIX = 'cgi-bin/menu/addconditional';
+
     /**
      * 创建个性化菜单
      *
      * @param array $menu
+     *
      * @return int|bool
      */
     public function addConditional(array $menu)
     {
         $result = $this->getRequest()
-            ->raw(array(
-                self::WECHAT_CONDITIONAL_MENU_ADD_PREFIX,
-                'access_token' => $this->getAccessToken()
-            ), $menu);
+                       ->raw([
+                           self::WECHAT_CONDITIONAL_MENU_ADD_PREFIX,
+                           'access_token' => $this->getAccessToken(),
+                       ], $menu);
+
         return isset($result['menuid']) ? $result['menuid'] : false;
     }
 
@@ -108,21 +120,24 @@ class Menu extends BaseComponent
      * 删除个性化菜单
      */
     const WECHAT_CONDITIONAL_MENU_DELETE_PREFIX = 'cgi-bin/menu/delconditional';
+
     /**
      * 删除个性化菜单
      *
      * @param $menuId
+     *
      * @return bool
      */
     public function deleteConditional($menuId)
     {
         $result = $this->getRequest()
-            ->raw(array(
-                self::WECHAT_CONDITIONAL_MENU_DELETE_PREFIX,
-                'access_token' => $this->getAccessToken()
-            ), array(
-                'menuid' => $menuId
-            ));
+                       ->raw([
+                           self::WECHAT_CONDITIONAL_MENU_DELETE_PREFIX,
+                           'access_token' => $this->getAccessToken(),
+                       ], [
+                           'menuid' => $menuId,
+                       ]);
+
         return isset($result['errmsg']) && $result['errmsg'] == 'ok';
     }
 
@@ -130,21 +145,24 @@ class Menu extends BaseComponent
      * 测试个性化菜单匹配结果
      */
     const WECHAT_CONDITIONAL_MENU_MATCH_PREFIX = 'cgi-bin/menu/trymatch';
+
     /**
      * 测试个性化菜单匹配结果
      *
      * @param $userId
+     *
      * @return array|bool
      */
     public function matchConditional($userId)
     {
         $result = $this->getRequest()
-            ->raw(array(
-                    self::WECHAT_CONDITIONAL_MENU_MATCH_PREFIX,
-                    'access_token' => $this->getAccessToken()
-            ), array(
-                'user_id' => $userId
-            ));
+                       ->raw([
+                           self::WECHAT_CONDITIONAL_MENU_MATCH_PREFIX,
+                           'access_token' => $this->getAccessToken(),
+                       ], [
+                           'user_id' => $userId,
+                       ]);
+
         return isset($result['button']) ? $result['button'] : false;
     }
 
@@ -152,6 +170,7 @@ class Menu extends BaseComponent
      * 获取自定义菜单配置接口
      */
     const WECHAT_MENU_CURRENT_GET_PREFIX = 'cgi-bin/get_current_selfmenu_info';
+
     /**
      * 获取自定义菜单配置接口
      *
@@ -160,10 +179,11 @@ class Menu extends BaseComponent
     public function getCurrent()
     {
         $result = $this->getRequest()
-            ->get(array(
-                self::WECHAT_MENU_CURRENT_GET_PREFIX,
-                'access_token' => $this->getAccessToken()
-            ));
+                       ->get([
+                           self::WECHAT_MENU_CURRENT_GET_PREFIX,
+                           'access_token' => $this->getAccessToken(),
+                       ]);
+
         return isset($result['selfmenu_info']) ? $result : false;
     }
 

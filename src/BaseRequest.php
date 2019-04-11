@@ -1,4 +1,5 @@
 <?php
+
 namespace Weikit\Wechat\Sdk;
 
 /**
@@ -11,14 +12,16 @@ abstract class BaseRequest extends BaseComponent
      * @var string 基本路径
      */
     public $baseUrl;
+
     /**
      * GET方式发送请求
      *
      * @param string|array $url
      * @param array $options
+     *
      * @return mixed
      */
-    public function get($url, array $options = array())
+    public function get($url, array $options = [])
     {
         return $this->http('GET', $url, null, $options);
     }
@@ -29,9 +32,10 @@ abstract class BaseRequest extends BaseComponent
      * @param string|array $url
      * @param mixed $data
      * @param array $options
+     *
      * @return mixed
      */
-    public function post($url, $data = null, array $options = array())
+    public function post($url, $data = null, array $options = [])
     {
         return $this->http('POST', $url, $data, $options);
     }
@@ -42,15 +46,16 @@ abstract class BaseRequest extends BaseComponent
      * @param string|array $url
      * @param mixed $data
      * @param array $options
+     *
      * @return mixed
      */
-    public function raw($url, $data = null, array $options = array())
+    public function raw($url, $data = null, array $options = [])
     {
-        return $this->http('POST', $url, $this->jsonEncode($data), array_merge(array(
-            'headers' => array(
-                'Content-Type' => 'application/json'
-            )
-        ), $options));
+        return $this->http('POST', $url, $this->jsonEncode($data), array_merge([
+            'headers' => [
+                'Content-Type' => 'application/json',
+            ],
+        ], $options));
     }
 
     /**
@@ -60,18 +65,20 @@ abstract class BaseRequest extends BaseComponent
      * @param array $files
      * @param mixed $data
      * @param array $options
+     *
      * @return mixed
      */
-    public function upload($url, array $files = array(), $data = null, array $options = array())
+    public function upload($url, array $files = [], $data = null, array $options = [])
     {
         foreach ($files as $name => $path) {
-            if (!file_exists($path) || !is_readable($path)) {
+            if ( ! file_exists($path) || ! is_readable($path)) {
                 throw new \InvalidArgumentException("File '{$name}' path '{$path}' does not exist or the file is unreadable");
             }
         }
-        return $this->http('POST', $url, $data, array_merge(array(
-            'files' => $files
-        ), $options));
+
+        return $this->http('POST', $url, $data, array_merge([
+            'files' => $files,
+        ], $options));
     }
 
     /**
@@ -82,10 +89,11 @@ abstract class BaseRequest extends BaseComponent
      * @param $data
      * @param array $options
      * @param bool $force
+     *
      * @return bool|mixed
      * @throws \HttpException
      */
-    public function http($method, $url, $data, array $options = array(), $force = true)
+    public function http($method, $url, $data, array $options = [], $force = true)
     {
         $url = $this->buildUrl($url); // 拼装Url
         $response = $this->request($method, $url, $data, $options);
@@ -102,7 +110,7 @@ abstract class BaseRequest extends BaseComponent
             switch ($response['errcode']) {
                 case 40001: // access_token 失效,强制更新access_token, 并更新请求地址重新执行请求
                     if ($force) {
-                        $url = preg_replace_callback("/access_token=([^&]*)/i", function(){
+                        $url = preg_replace_callback("/access_token=([^&]*)/i", function () {
                             return 'access_token=' . $this->getAccessToken(true);
                         }, $url);
                         $response = $this->request($method, $url, $data, $options, false); // 仅重试一次
@@ -110,6 +118,7 @@ abstract class BaseRequest extends BaseComponent
                     break;
             }
         }
+
         return $response;
     }
 
@@ -128,15 +137,17 @@ abstract class BaseRequest extends BaseComponent
      *         ... // 自定义设置
      *     )
      * ```
+     *
      * @return mixed
      */
-    abstract protected function request($method, $url, $data, array $options = array());
+    abstract protected function request($method, $url, $data, array $options = []);
 
     /**
      * url拼装(baseUrl,数组转换)
      * 注意: Http必须使用该函数拼装符合规则的url
      *
      * @param string|array $url
+     *
      * @return string
      */
     public function buildUrl($url)
@@ -149,9 +160,10 @@ abstract class BaseRequest extends BaseComponent
             }
             $url = $base . (stripos($base, '?') === null ? '&' : '?') . http_build_query($url);
         }
-        if (!preg_match('/^https?:\\/\\//i', $url) && $this->baseUrl !== '') {
+        if ( ! preg_match('/^https?:\\/\\//i', $url) && $this->baseUrl !== '') {
             $url = $this->baseUrl . '/' . $url;
         }
+
         return $url;
     }
 
@@ -159,6 +171,7 @@ abstract class BaseRequest extends BaseComponent
      * 微信请求数据JSON编码
      *
      * @param array $data
+     *
      * @return array|mixed|string
      */
     protected function jsonEncode(array $data)
@@ -171,6 +184,7 @@ abstract class BaseRequest extends BaseComponent
                 return html_entity_decode('&#x' . $matches[1] . ';', ENT_COMPAT, 'UTF-8');
             }, json_encode($data));
         }
+
         return $data;
     }
 
@@ -178,6 +192,7 @@ abstract class BaseRequest extends BaseComponent
      * 微信响应数据JSON解码
      *
      * @param $data
+     *
      * @return mixed
      * @throws \HttpException
      */
@@ -189,6 +204,7 @@ abstract class BaseRequest extends BaseComponent
         if (json_last_error() !== JSON_ERROR_NONE) {
             throw new \HttpException('Failed to parse JSON string: ' . json_last_error_msg());
         }
+
         return $return;
     }
 }

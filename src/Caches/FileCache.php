@@ -1,4 +1,5 @@
 <?php
+
 namespace Weikit\Wechat\Sdk\Caches;
 
 use Exception;
@@ -22,6 +23,7 @@ class FileCache extends BaseCache
      * @param string $key
      * @param mixed $value
      * @param int $duration
+     *
      * @return bool
      * @throws Exception
      */
@@ -47,6 +49,7 @@ class FileCache extends BaseCache
      * 获取缓存数据
      *
      * @param $key
+     *
      * @return bool|mixed
      */
     public function get($key)
@@ -61,6 +64,7 @@ class FileCache extends BaseCache
                 $cacheValue = @stream_get_contents($fp);
                 @flock($fp, LOCK_UN);
                 @fclose($fp);
+
                 return unserialize($cacheValue);
             }
         }
@@ -77,6 +81,7 @@ class FileCache extends BaseCache
      * 获取基本缓存键值前缀
      *
      * @param null $key 缓存键值, 如果不为空则返回加入基本缓存键值后的缓存键值
+     *
      * @return null|string
      */
     public function getKey($key = null)
@@ -109,6 +114,7 @@ class FileCache extends BaseCache
         if ($this->_cachePath === null) {
             $this->_cachePath = sys_get_temp_dir();
         }
+
         return $this->_cachePath;
     }
 
@@ -116,13 +122,14 @@ class FileCache extends BaseCache
      * 设置缓存路径
      *
      * @param string $cachePath
+     *
      * @throws \UnexpectedValueException
      */
     public function setCachePath($cachePath)
     {
-        if (!is_dir($cachePath)) {
+        if ( ! is_dir($cachePath)) {
             throw new InvalidArgumentException("The cache path '{$cachePath}' must be an directory.");
-        } elseif (!is_writable($cachePath)) {
+        } elseif ( ! is_writable($cachePath)) {
             throw new InvalidArgumentException("The cache path '{$cachePath}' is not writable.");
         }
         $this->_cachePath = $cachePath;
@@ -132,6 +139,7 @@ class FileCache extends BaseCache
      * 获取缓存文件
      *
      * @param string $key 缓存键值
+     *
      * @return string
      */
     protected function getCacheFile($key)

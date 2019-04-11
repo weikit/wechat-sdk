@@ -15,9 +15,9 @@ $pc = new WXBizMsgCrypt($token, $encodingAesKey, $appId);
 $encryptMsg = '';
 $errCode = $pc->encryptMsg($text, $timeStamp, $nonce, $encryptMsg);
 if ($errCode == 0) {
-	print("加密后: " . $encryptMsg . "\n");
+    print("加密后: " . $encryptMsg . "\n");
 } else {
-	print($errCode . "\n");
+    print($errCode . "\n");
 }
 
 $xml_tree = new DOMDocument();
@@ -34,7 +34,7 @@ $from_xml = sprintf($format, $encrypt);
 $msg = '';
 $errCode = $pc->decryptMsg($msg_sign, $timeStamp, $nonce, $from_xml, $msg);
 if ($errCode == 0) {
-	print("解密后: " . $msg . "\n");
+    print("解密后: " . $msg . "\n");
 } else {
-	print($errCode . "\n");
+    print($errCode . "\n");
 }

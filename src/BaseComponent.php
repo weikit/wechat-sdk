@@ -1,20 +1,19 @@
 <?php
-namespace Weikit\Wechat\Sdk;
 
-use Weikit\Base\Object;
+namespace Weikit\Wechat\Sdk;
 
 /**
  * Class BaseComponent
  * @package Weikit\Wechat\Sdk
  */
-abstract class BaseComponent extends Object
+abstract class BaseComponent extends BaseObject
 {
     /**
      * @var BaseWechat|Wechat $wechat
      */
     protected $wechat;
 
-    public function __construct(BaseWechat $wechat, $config = array())
+    public function __construct(BaseWechat $wechat, $config = [])
     {
         $this->wechat = $wechat;
         parent::__construct($config);
@@ -22,6 +21,7 @@ abstract class BaseComponent extends Object
 
     /**
      * @param bool $force
+     *
      * @return mixed
      */
     public function getAccessToken($force = false)

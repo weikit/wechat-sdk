@@ -15,16 +15,11 @@
     }
   ],
   "require": {
-    "ext-openssl": "*",
-    "ext-fileinfo": "*",
-    "weikit/base": "dev-master"
+    "php": ">=7.0.0"
   },
   "autoload": {
     "psr-4": {
       "Weikit\\Wechat\\Sdk\\": "src"
     }
-  },
-  "suggest": {
-    "guzzlehttp/guzzle": "GuzzleRequest使用该扩展作为基础库发送请求 (~5.3|~6.0)."
   }
 }

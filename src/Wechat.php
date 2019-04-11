@@ -1,7 +1,9 @@
 <?php
+
 namespace Weikit\Wechat\Sdk;
 
 use InvalidArgumentException;
+use Weikit\Wechat\Sdk\Exceptions\ComponentNotFoundExceptions;
 
 /**
  * @property \Weikit\Wechat\Sdk\Components\Menu $menu 自定义菜单
@@ -46,59 +48,92 @@ class Wechat extends BaseWechat
      */
     public $token;
     /**
-     * @var 加密AES Key
+     * @var string 加密AES Key
      */
     public $encodingAESKey;
-
-    public function __construct($config = array())
-    {
-        // merge core components with custom components
-        foreach ($this->coreComponents() as $id => $component) {
-            if (!isset($config['components'][$id])) {
-                $config['components'][$id] = $component;
-            } elseif (is_array($config['components'][$id]) && !isset($config['components'][$id]['class'])) {
-                $config['components'][$id]['class'] = $component['class'];
-            }
-        }
-        parent::__construct($config);
-    }
 
     public function init()
     {
         if ($this->appId === null) {
-            throw new InvalidArgumentException('The wechat property "appId" must be set.');
+            throw new InvalidArgumentException('The wechat property "appId" must be set');
         } elseif ($this->appSecret === null) {
-            throw new InvalidArgumentException('The wechat property "appSecret" must be set.');
+            throw new InvalidArgumentException('The wechat property "appSecret" must be set');
         } elseif ($this->token === null) {
-            throw new InvalidArgumentException('The wechat property "token" must be set.');
+            throw new InvalidArgumentException('The wechat property "token" must be set');
         }
     }
 
     /**
-     * 核心组件
-     *
-     * @return array
+     * @param array $components
      */
-    public function coreComponents()
+    public function setComponents(array $components)
     {
-        return array(
-            'cache' => array('class' => 'Weikit\Wechat\Sdk\Caches\FileCache'), // 缓存组件
-            'request' => array('class' => 'Weikit\Wechat\Sdk\Requests\CurlRequest'), // 接口HTTP请求组件
+        foreach ($components as $id => $component) {
+            $this->setComponent($component);
+        }
+    }
 
-            'menu' => array('class' => 'Weikit\Wechat\Sdk\Components\Menu'), // 自定义菜单
-            'message' => array('class' => 'Weikit\Wechat\Sdk\Components\Message'), // 消息管理
-            'massMessage' => array('class' => 'Weikit\Wechat\Sdk\Components\MassMessage'), // 高级群发接口
-            'template' => array('class' => 'Weikit\Wechat\Sdk\Components\Template'), // 模板消息接口
-            'oauth' => array('class' => 'Weikit\Wechat\Sdk\Components\Oauth'), // 网页授权
-            'material' => array('class' => 'Weikit\Wechat\Sdk\Components\Material'), // 素材管理
-            'qrcode' => array('class' => 'Weikit\Wechat\Sdk\Components\Qrcode'), // 二维码管理
-            'stats' => array('class' => 'Weikit\Wechat\Sdk\Components\Stats'), // 数据统计
-            'customerService' => array('class' => 'Weikit\Wechat\Sdk\Components\CustomerService'), // 新版客服功能
-            'card' => array('class' => 'Weikit\Wechat\Sdk\Components\Card'), // 微信卡券
-            'poi' => array('class' => 'Weikit\Wechat\Sdk\Components\Poi'), // 门店
+    private $_components = [
+        'cache'   => ['class' => 'Weikit\Wechat\Sdk\Caches\FileCache'], // 缓存组件
+        'request' => ['class' => 'Weikit\Wechat\Sdk\Requests\CurlRequest'], // 接口HTTP请求组件
 
-            'authorization' => array('class' => 'Weikit\Wechat\Sdk\Component\Authorization'), // 第三方平台授权
-        );
+        'menu'            => ['class' => 'Weikit\Wechat\Sdk\Components\Menu'], // 自定义菜单
+        'message'         => ['class' => 'Weikit\Wechat\Sdk\Components\Message'], // 消息管理
+        'massMessage'     => ['class' => 'Weikit\Wechat\Sdk\Components\MassMessage'], // 高级群发接口
+        'template'        => ['class' => 'Weikit\Wechat\Sdk\Components\Template'], // 模板消息接口
+        'oauth'           => ['class' => 'Weikit\Wechat\Sdk\Components\Oauth'], // 网页授权
+        'material'        => ['class' => 'Weikit\Wechat\Sdk\Components\Material'], // 素材管理
+        'qrcode'          => ['class' => 'Weikit\Wechat\Sdk\Components\Qrcode'], // 二维码管理
+        'stats'           => ['class' => 'Weikit\Wechat\Sdk\Components\Stats'], // 数据统计
+        'customerService' => ['class' => 'Weikit\Wechat\Sdk\Components\CustomerService'], // 新版客服功能
+        'card'            => ['class' => 'Weikit\Wechat\Sdk\Components\Card'], // 微信卡券
+        'poi'             => ['class' => 'Weikit\Wechat\Sdk\Components\Poi'], // 门店
+
+        'authorization' => ['class' => 'Weikit\Wechat\Sdk\Component\Authorization'], // 第三方平台授权
+    ];
+
+    /**
+     * @param string $id
+     * @param array|BaseComponent $config
+     */
+    public function setComponent($id, $config)
+    {
+        if (is_object($config) && ! is_subclass_of($config instanceof BaseObject)) {
+            throw new InvalidArgumentException("The component '{$id}' of wechat must be subclass of '" . BaseObject::class . "''");
+        } elseif ( ! is_array($config)) {
+            throw new InvalidArgumentException("The component config is not array");
+        } elseif (empty($config['class'])) {
+            throw new InvalidArgumentException("The property 'class' of object config must be set");
+        }
+        $this->_components[$id] = $config;
+    }
+
+    /**
+     * @param string $id
+     *
+     * @return mixed
+     */
+    public function getComponent($id)
+    {
+        if ( ! array_key_exists($id, $this->_components)) {
+            throw new ComponentNotFoundExceptions("The component '{$id}' of wechat is not exists");
+        } elseif (is_array($this->_components[$id])) {
+            $this->setComponent($id, $this->createComponent($this->_components[$id]));
+        }
+
+        return $this->_components[$id];
+    }
+
+    /**
+     * @param array $config
+     *
+     * @return mixed
+     */
+    protected function createComponent(array $config)
+    {
+        $class = $config['class'];
+        unset($config['class']);
+        return new $class($this, $config);
     }
 
     /**
@@ -106,7 +141,7 @@ class Wechat extends BaseWechat
      */
     private $_request;
 
-     /**
+    /**
      * 获取Request组件
      *
      * @return BaseRequest
@@ -114,8 +149,9 @@ class Wechat extends BaseWechat
     public function getRequest()
     {
         if ($this->_request === null) {
-            $this->setRequest($this->get('request', false));
+            $this->setRequest($this->getComponent('request'));
         }
+
         return $this->_request;
     }
 
@@ -145,8 +181,9 @@ class Wechat extends BaseWechat
     public function getCache()
     {
         if ($this->_cache === null) {
-            $this->setCache($this->get('cache', false));
+            $this->setCache($this->getComponent('cache', false));
         }
+
         return $this->_cache;
     }
 
@@ -169,6 +206,7 @@ class Wechat extends BaseWechat
      * @param string $signature 微信加密签名，signature结合了开发者填写的token参数和请求中的timestamp参数、nonce参数。
      * @param string $timestamp 时间戳
      * @param string $nonce 随机数
+     *
      * @return bool
      */
     public function verifySignature($signature = null, $timestamp = null, $nonce = null)
@@ -179,6 +217,7 @@ class Wechat extends BaseWechat
         $tmpArr = [$this->token, $timestamp, $nonce];
         sort($tmpArr, SORT_STRING);
         $tmpStr = implode($tmpArr);
+
         return sha1($tmpStr) == $signature;
     }
 
@@ -187,6 +226,7 @@ class Wechat extends BaseWechat
      *
      * @param null $message
      * @param null $encryptType
+     *
      * @return array|mixed
      */
     public function parseMessage($message = null, $encryptType = null)
@@ -194,17 +234,18 @@ class Wechat extends BaseWechat
         $message === null && $message = file_get_contents('php://input');
         $encryptType === null && isset($_GET['encrypt_type']) && $encryptType = $_GET['encrypt_type'];
         $return = [];
-        if (!empty($message)) {
+        if ( ! empty($message)) {
             if ($encryptType === 'aes') {
                 $messageSignature = isset($_GET['msg_signature']) ? $_GET['msg_signature'] : null;
                 $nonce = isset($_GET['nonce']) ? $_GET['nonce'] : null;
                 $timestamp = isset($_GET['timestamp']) ? $_GET['timestamp'] : null;
                 $message = $this->decryptMessage($message, $timestamp, $nonce, $messageSignature);
             }
-            if (!empty($message)) {
+            if ( ! empty($message)) {
                 $return = $this->parseXml($message);
             }
         }
+
         return $return;
     }
 
@@ -215,6 +256,7 @@ class Wechat extends BaseWechat
      * @param $timestamp
      * @param $nonce
      * @param $messageSignature
+     *
      * @return false|string
      */
     public function decryptMessage($message, $timestamp, $nonce, $messageSignature)
@@ -222,6 +264,7 @@ class Wechat extends BaseWechat
         if ($this->getMessageCrypter()->decryptMsg($messageSignature, $timestamp, $nonce, $message, $return) != 0) {
             return false;
         }
+
         return $return;
     }
 
@@ -231,6 +274,7 @@ class Wechat extends BaseWechat
      * @param string $message xml消息
      * @param $timeStamp
      * @param $nonce
+     *
      * @return false|string
      */
     public function encryptMessage($message, $timeStamp, $nonce)
@@ -238,6 +282,7 @@ class Wechat extends BaseWechat
         if ($this->getMessageCrypter()->encryptMsg($message, $timeStamp, $nonce, $return) != 0) {
             return false;
         }
+
         return $return;
     }
 
@@ -245,22 +290,26 @@ class Wechat extends BaseWechat
      * access_token API前缀
      */
     const WECHAT_ACCESS_TOKEN_PREFIX = 'cgi-bin/token';
+
     /**
      * 接口请求获取access_token
      *
      * @see https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1421140183&token=&lang=zh_CN
+     *
      * @param string $grantType
+     *
      * @return array|bool
      */
     protected function requestAccessToken($grantType = 'client_credential')
     {
         $result = $this->getRequest()
-            ->get(array(
-                self::WECHAT_ACCESS_TOKEN_PREFIX,
-                'appid' => $this->appId,
-                'secret' => $this->appSecret,
-                'grant_type' => $grantType
-            ));
+                       ->get([
+                           self::WECHAT_ACCESS_TOKEN_PREFIX,
+                           'appid'      => $this->appId,
+                           'secret'     => $this->appSecret,
+                           'grant_type' => $grantType,
+                       ]);
+
         return isset($result['access_token']) ? $result : false;
     }
 
@@ -268,20 +317,23 @@ class Wechat extends BaseWechat
      * 请求获取api ticket
      */
     const TYPE_API_TICKET_GET_PREFIX = 'cgi-bin/ticket/getticket';
+
     /**
      * 请求获取api ticket
      *
      * @param string $type api ticket 类型
+     *
      * @return bool|mixed
      */
     public function requestApiTicket($type)
     {
         $result = $this->getRequest()
-            ->get(array(
-                self::WECHAT_ACCESS_TOKEN_PREFIX,
-                'access_token' => $this->getAccessToken(),
-                'type' => $type
-            ));
+                       ->get([
+                           self::WECHAT_ACCESS_TOKEN_PREFIX,
+                           'access_token' => $this->getAccessToken(),
+                           'type'         => $type,
+                       ]);
+
         return isset($result['errmsg']) && $result['errmsg'] === 'ok' ? $result : false;
     }
 
@@ -289,6 +341,7 @@ class Wechat extends BaseWechat
      * 获取微信服务器IP地址
      */
     const WECHAT_IP_LIST_GET_PREFIX = 'cgi-bin/getcallbackip';
+
     /**
      * 获取微信服务器IP地址
      *
@@ -297,10 +350,11 @@ class Wechat extends BaseWechat
     public function getIpList()
     {
         $result = $this->getRequest()
-            ->get(array(
-                self::WECHAT_IP_LIST_GET_PREFIX,
-                'access_token' => $this->getAccessToken()
-            ));
+                       ->get([
+                           self::WECHAT_IP_LIST_GET_PREFIX,
+                           'access_token' => $this->getAccessToken(),
+                       ]);
+
         return isset($result['ip_list']) ? $result['ip_list'] : false;
     }
     /* =================== 消息管理 =================== */
@@ -321,6 +375,7 @@ class Wechat extends BaseWechat
      * 获取公众号的自动回复规则
      */
     const WECHAT_AUTO_REPLY_INFO_GET_PREFIX = 'cgi-bin/get_current_autoreply_info';
+
     /**
      * 获取公众号的自动回复规则
      *
@@ -330,11 +385,12 @@ class Wechat extends BaseWechat
     {
         $result = $this
             ->getRequest()
-            ->get(array(
+            ->get([
                 self::WECHAT_AUTO_REPLY_INFO_GET_PREFIX,
-                'access_token' => $this->getAccessToken()
-            ));
-        return !array_key_exists('errcode', $result) ? $result : false;
+                'access_token' => $this->getAccessToken(),
+            ]);
+
+        return ! array_key_exists('errcode', $result) ? $result : false;
     }
 
     /* =================== 微信网页开发 =================== */
@@ -364,22 +420,25 @@ class Wechat extends BaseWechat
      * 长链接转短链接接口
      */
     const WECHAT_SHORT_URL_GET_PREFIX = 'cgi-bin/shorturl';
+
     /**
      * 长链接转短链接接口
      *
      * @param $url
+     *
      * @return bool|mixed
      */
     public function getShortUrl($url)
     {
         return $this->getRequest()
-            ->raw(array(
-                self::WECHAT_SHORT_URL_GET_PREFIX,
-                'access_token' => $this->getAccessToken()
-            ), array(
-                'action' => 'long2short',
-                'long_url' => $url
-            ));
+                    ->raw([
+                        self::WECHAT_SHORT_URL_GET_PREFIX,
+                        'access_token' => $this->getAccessToken(),
+                    ], [
+                        'action'   => 'long2short',
+                        'long_url' => $url,
+                    ]);
+
         return isset($result['short_url']) ? $result['short_url'] : false;
     }
 

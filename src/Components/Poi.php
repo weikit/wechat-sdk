@@ -1,4 +1,5 @@
 <?php
+
 namespace Weikit\Wechat\Sdk\Components;
 
 use Weikit\Wechat\Sdk\BaseComponent;
@@ -13,6 +14,7 @@ class Poi extends BaseComponent
      * 上传图片
      *
      * @param $path
+     *
      * @return bool
      * @see \Weikit\Wechat\Sdk\Components\Material::uploadImage
      */
