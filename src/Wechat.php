@@ -224,22 +224,34 @@ class Wechat extends BaseWechat
     /**
      * 解析微信请求消息
      *
-     * @param null $message
-     * @param null $encryptType
+     * @param string $message
+     * @param array $options
+     *
+     * ```
+     *  $options = [
+     *      'encryptType' => '"aes"|null',
+     *      'msg_signature' => 'string',
+     *      'nonce' => 'string',
+     *      'timestamp' => 'string|int'
+     *  ];
+     * ```
      *
      * @return array|mixed
      */
-    public function parseMessage($message = null, $encryptType = null)
+    public function parseMessage($message = null, array $options = [])
     {
         $message === null && $message = file_get_contents('php://input');
-        $encryptType === null && isset($_GET['encrypt_type']) && $encryptType = $_GET['encrypt_type'];
         $return = [];
         if ( ! empty($message)) {
+            $encryptType = $options['encryptType'] ?? $_GET['encrypt_type'] ?? null;
             if ($encryptType === 'aes') {
-                $messageSignature = isset($_GET['msg_signature']) ? $_GET['msg_signature'] : null;
-                $nonce = isset($_GET['nonce']) ? $_GET['nonce'] : null;
-                $timestamp = isset($_GET['timestamp']) ? $_GET['timestamp'] : null;
-                $message = $this->decryptMessage($message, $timestamp, $nonce, $messageSignature);
+                $message = $this->decryptMessage(
+                    $message,
+                    $options['timestamp'] ?? $_GET['timestamp'] ?? null,
+                    $options['nonce'] ?? $_GET['nonce'] ?? null,
+                    $options['msgSignature'] ?? $_GET['msg_signature'] ?? null
+
+                );
             }
             if ( ! empty($message)) {
                 $return = $this->parseXml($message);
