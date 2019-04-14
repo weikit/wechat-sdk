@@ -141,14 +141,19 @@ abstract class BaseWechat extends BaseObject
     /**
      * 解析Xml数据
      *
-     * @param $xml
+     * @param string $xml
      *
-     * @return mixed
+     * @return array
+     * @throws \InvalidArgumentException
      */
     public function parseXml($xml)
     {
-        libxml_disable_entity_loader(true);
-        $return = simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NOCDATA);
+        try {
+            libxml_disable_entity_loader(true);
+            $return = simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NOCDATA);
+        } catch (\Exception $e) {
+            throw new \InvalidArgumentException('The argument "xml" is not valid xml data');
+        }
 
         return json_decode(json_encode($return, JSON_UNESCAPED_UNICODE), true);
     }

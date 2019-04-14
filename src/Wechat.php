@@ -236,7 +236,8 @@ class Wechat extends BaseWechat
      *  ];
      * ```
      *
-     * @return array|mixed
+     * @return array
+     * @throws \InvalidArgumentException
      */
     public function parseMessage($message = null, array $options = [])
     {
