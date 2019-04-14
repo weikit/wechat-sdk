@@ -98,7 +98,7 @@ class Wechat extends BaseWechat
      */
     public function setComponent($id, $config)
     {
-        if (is_object($config) && ! is_subclass_of($config instanceof BaseObject)) {
+        if (is_object($config) && ! is_subclass_of($config, BaseObject::class)) {
             throw new InvalidArgumentException("The component '{$id}' of wechat must be subclass of '" . BaseObject::class . "''");
         } elseif ( ! is_array($config)) {
             throw new InvalidArgumentException("The component config is not array");
